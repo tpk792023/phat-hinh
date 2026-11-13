@@ -22,7 +22,7 @@ button.primary{background:var(--accent);border-color:var(--accent);color:#fff;fo
 button.primary:hover{background:var(--accent2)}
 button.danger{background:var(--err);border-color:var(--err);color:#fff;font-weight:600}
 button.on{background:#1e3a8a;border-color:var(--accent)}
-select{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 8px;width:100%}
+select,input[type=text]{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 8px;width:100%}
 .hidden{display:none!important}
 .dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--muted);margin-right:6px;vertical-align:middle}
 .dot.ok{background:var(--ok)} .dot.warn{background:var(--warn)} .dot.err{background:var(--err)}
@@ -33,38 +33,65 @@ select{background:var(--panel2);border:1px solid var(--line);border-radius:8px;p
 header{display:flex;align-items:center;gap:14px;padding:8px 14px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
 header h1{font-size:17px;margin:0;font-weight:700}
 .code{font-family:ui-monospace,Consolas,monospace;font-size:18px;letter-spacing:2px;background:var(--panel2);padding:2px 10px;border-radius:6px;border:1px solid var(--line)}
+.recind{background:var(--err);color:#fff;font-weight:700;padding:2px 10px;border-radius:6px;font-size:14px}
 .grow{flex:1}
 .main{flex:1;display:flex;min-height:0}
-.stage{position:relative;flex:1;background:#000;overflow:hidden;touch-action:none;user-select:none}
-.stage video{position:absolute;left:50%;top:50%;transform-origin:center;background:#000}
-.placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);text-align:center;padding:20px;gap:8px}
+.left{flex:1;display:flex;flex-direction:column;min-width:0}
+.stage{position:relative;flex:1;background:#000;overflow:hidden;touch-action:none;user-select:none;min-height:200px}
+.stage canvas,.stage video{position:absolute;left:50%;top:50%;transform-origin:center;background:#000}
+.placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);text-align:center;padding:20px;gap:8px;background:#000}
 .placeholder b{color:var(--text);font-size:20px}
 .placeholder > *{max-width:min(760px,100%);overflow-wrap:anywhere}
-.toolbar{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;gap:6px;flex-wrap:wrap;justify-content:center;
-  background:rgba(15,17,21,.82);border:1px solid var(--line);border-radius:12px;padding:6px;transition:opacity .3s;max-width:calc(100% - 20px)}
+.toolbar{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;gap:6px;flex-wrap:wrap;justify-content:center;align-items:center;
+  background:rgba(15,17,21,.85);border:1px solid var(--line);border-radius:12px;padding:6px;transition:opacity .3s;max-width:calc(100% - 20px)}
 .toolbar button{padding:7px 10px;font-size:14px}
+.toolbar .sep{width:1px;align-self:stretch;background:var(--line);margin:0 2px}
 .stage.idle .toolbar,.stage.idle .stats{opacity:0;pointer-events:none}
 .stage.idle{cursor:none}
-.stats{position:absolute;left:10px;top:10px;background:rgba(15,17,21,.75);border-radius:8px;padding:5px 9px;font-size:13px;transition:opacity .3s;font-family:ui-monospace,Consolas,monospace}
+.stats{position:absolute;left:10px;top:10px;background:rgba(15,17,21,.75);border-radius:8px;padding:5px 9px;font-size:13px;transition:opacity .3s;font-family:ui-monospace,Consolas,monospace;max-width:calc(100% - 20px)}
 .frozen-tag{position:absolute;right:10px;top:10px;background:var(--warn);color:#000;font-weight:700;padding:3px 10px;border-radius:6px}
-aside{width:330px;background:var(--panel);border-left:1px solid var(--line);overflow:auto;padding:14px;display:flex;flex-direction:column;gap:14px}
+
+.srcbar{display:flex;gap:10px;padding:10px;background:var(--panel);border-top:1px solid var(--line);overflow-x:auto;min-height:158px;align-items:stretch}
+.srcbar .empty{color:var(--muted);align-self:center;font-size:14px;padding:0 6px}
+.thumb{flex:0 0 196px;background:var(--panel2);border:2px solid var(--line);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:4px}
+.thumb.main{border-color:var(--accent)}
+.thumb.sub{border-color:var(--warn)}
+.tv{position:relative;aspect-ratio:16/9;background:#000;border-radius:6px;overflow:hidden;cursor:pointer}
+.tv video{width:100%;height:100%;object-fit:contain}
+.num{position:absolute;left:4px;top:4px;background:rgba(0,0,0,.75);border-radius:4px;padding:0 6px;font-size:12px;font-weight:700}
+.tag{position:absolute;right:4px;top:4px;font-size:11px;padding:0 6px;border-radius:4px;font-weight:700}
+.thumb.main .tag{background:var(--accent);color:#fff}
+.thumb.sub .tag{background:var(--warn);color:#000}
+.tname{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tstat{font-size:11px;color:var(--muted);min-height:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tbtns{display:flex;gap:4px}
+.tbtns button{flex:1;padding:3px 0;font-size:12px}
+
+aside{width:340px;background:var(--panel);border-left:1px solid var(--line);overflow:auto;padding:14px;display:flex;flex-direction:column;gap:14px}
 .card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:9px}
 .card h3{margin:0;font-size:15px}
-.tabs{display:flex;gap:6px}
-.tabs button{flex:1}
+.card h4{margin:4px 0 0;font-size:14px;color:var(--muted);font-weight:600}
 .qr{background:#fff;padding:10px;border-radius:8px;align-self:center;line-height:0}
-.qr img,.qr canvas{width:170px!important;height:170px!important}
+.qr img,.qr canvas{width:160px!important;height:160px!important}
 .link{font-family:ui-monospace,Consolas,monospace;font-size:12px;word-break:break-all;background:var(--bg);padding:6px 8px;border-radius:6px;border:1px solid var(--line)}
 .row{display:flex;gap:8px;align-items:center}
 .row > *{flex:1}
-label.chk{display:flex;gap:8px;align-items:center;cursor:pointer}
+label.chk{display:flex;gap:8px;align-items:center;cursor:pointer;font-size:14px}
 kbd{background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:12px}
 .keys{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:13px;color:var(--muted)}
 .warnbox{background:#3b2a06;border:1px solid #7c5a0b;color:#fde68a;border-radius:8px;padding:8px 10px;font-size:13px}
-@media (max-width:820px){
+.toast{position:fixed;left:50%;top:14px;transform:translateX(-50%);background:#111827;border:1px solid var(--line);color:var(--text);padding:9px 16px;border-radius:10px;z-index:50;box-shadow:0 6px 20px rgba(0,0,0,.4);max-width:calc(100% - 32px)}
+dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:18px 20px;max-width:min(640px,calc(100% - 32px))}
+dialog::backdrop{background:rgba(0,0,0,.6)}
+dialog h2{margin:0 0 10px;font-size:18px}
+dialog ol{padding-left:20px;margin:6px 0}
+dialog li{margin:4px 0}
+dialog .row{margin-top:14px;justify-content:flex-end}
+dialog .row > *{flex:0 0 auto}
+@media (max-width:860px){
   .main{flex-direction:column}
   aside{width:auto;border-left:0;border-top:1px solid var(--line)}
-  .stage{min-height:56vh}
+  .stage{min-height:52vh}
 }
 
 /* ===== Điện thoại phát ===== */
@@ -76,8 +103,10 @@ kbd{background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:
 #camGo{padding:14px;font-size:17px}
 .status{padding:8px 12px;background:var(--panel);border-bottom:1px solid var(--line);font-size:14px}
 
-/* ===== Máy xem ===== */
-#viewer .stage video{width:100%;height:100%;left:0;top:0;object-fit:contain}
+/* ===== Máy xem / cửa sổ xuất ===== */
+#viewer .stage video,#outv video{width:100%;height:100%;left:0;top:0;object-fit:contain}
+#outv{background:#000;position:relative}
+#outv video{position:absolute}
 </style>
 </head>
 <body>
@@ -87,73 +116,100 @@ kbd{background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:
   <header>
     <h1>📽️ Phát Hình Lớp Học</h1>
     <span class="small">Mã phòng</span><span class="code" id="roomCode">-----</span>
+    <span class="recind hidden" id="recInd">● ĐANG GHI 00:00</span>
     <span class="grow"></span>
     <span class="small"><span class="dot" id="netDot"></span><span id="netText">Đang kết nối máy chủ…</span></span>
     <span class="small">👀 <span id="viewerCount">0</span> máy đang xem</span>
   </header>
   <div class="main">
-    <div class="stage" id="stage">
-      <video id="mainVideo" autoplay playsinline muted></video>
-      <div class="placeholder" id="placeholder">
-        <b>Chưa có hình</b>
-        <span>Bấm <b style="font-size:inherit">Bật webcam</b> ở khung bên phải,<br>hoặc dùng điện thoại quét mã QR để phát hình lên đây.</span>
+    <div class="left">
+      <div class="stage" id="stage">
+        <canvas id="program" width="1280" height="720"></canvas>
+        <div class="placeholder" id="placeholder">
+          <b>Chưa có nguồn hình</b>
+          <span>Thêm nguồn ở khung bên phải: <b style="font-size:inherit">＋ Thêm webcam</b>, <b style="font-size:inherit">＋ Chia sẻ màn hình</b>,
+          hoặc dùng điện thoại quét mã QR. Có thể thêm nhiều nguồn cùng lúc.</span>
+        </div>
+        <div class="stats hidden" id="stats"></div>
+        <div class="frozen-tag hidden" id="frozenTag">⏸ ĐANG DỪNG HÌNH</div>
+        <div class="toolbar hidden" id="toolbar">
+          <button data-mode="one" title="Một nguồn">▣ Một</button>
+          <button data-mode="two" title="Chia đôi: nguồn chính + nguồn phụ">◫ Đôi</button>
+          <button data-mode="grid" title="Lưới: tất cả nguồn">⊞ Lưới</button>
+          <button data-mode="pip" title="Hình trong hình: nguồn phụ ở góc">⧉ Góc</button>
+          <span class="sep"></span>
+          <button id="bFreeze" title="Dừng hình (Space)">⏸ Dừng</button>
+          <button id="bMirror" title="Lật gương nguồn chính (M)">↔</button>
+          <button id="bRotate" title="Xoay nguồn chính 90° (R)">⟳</button>
+          <span class="sep"></span>
+          <button id="bZoomOut" title="Thu nhỏ (-)">－</button>
+          <button id="bZoomReset" title="Về cỡ gốc (0)">1×</button>
+          <button id="bZoomIn" title="Phóng to (+)">＋</button>
+          <span class="sep"></span>
+          <button id="bShot" title="Chụp ảnh (S)">📷</button>
+          <button id="bFull" title="Toàn màn hình (F)">⛶</button>
+        </div>
       </div>
-      <div class="stats hidden" id="stats"></div>
-      <div class="frozen-tag hidden" id="frozenTag">⏸ ĐANG DỪNG HÌNH</div>
-      <div class="toolbar hidden" id="toolbar">
-        <button id="bFreeze" title="Dừng hình (Space)">⏸ Dừng hình</button>
-        <button id="bMirror" title="Lật gương (M)">↔ Lật</button>
-        <button id="bRotate" title="Xoay 90° (R)">⟳ Xoay</button>
-        <button id="bZoomOut" title="Thu nhỏ (-)">－</button>
-        <button id="bZoomReset" title="Về cỡ gốc (0)">1×</button>
-        <button id="bZoomIn" title="Phóng to (+)">＋</button>
-        <button id="bShot" title="Chụp ảnh (S)">📷 Chụp</button>
-        <button id="bFull" title="Toàn màn hình (F)">⛶ Toàn màn hình</button>
-      </div>
+      <div class="srcbar" id="srcbar"><span class="empty" id="srcEmpty">Các nguồn hình sẽ hiện ở đây. Bấm vào hình nhỏ để chọn làm hình chính.</span></div>
     </div>
     <aside>
       <div class="warnbox hidden" id="httpWarn">
         Trang đang mở từ máy (file://), điện thoại sẽ không vào được. Hãy mở trang từ địa chỉ web https để dùng điện thoại.
       </div>
       <div class="card">
-        <h3>1. Chọn nguồn hình</h3>
-        <div class="tabs">
-          <button id="tabUsb" class="on">🎥 Webcam USB</button>
-          <button id="tabPhone">📱 Điện thoại</button>
-        </div>
-        <div id="paneUsb" style="display:flex;flex-direction:column;gap:8px">
-          <select id="usbDev"><option value="">(Camera mặc định)</option></select>
+        <h3>1. Thêm nguồn hình</h3>
+        <h4>🎥 Webcam USB (cắm được nhiều cái)</h4>
+        <select id="usbDev"><option value="">(Camera mặc định)</option></select>
+        <div class="row">
           <select id="usbQual">
-            <option value="480">480p – nhẹ</option>
-            <option value="720" selected>720p – nét vừa</option>
-            <option value="1080">1080p – nét nhất</option>
+            <option value="480">480p</option>
+            <option value="720" selected>720p</option>
+            <option value="1080">1080p</option>
           </select>
-          <button class="primary" id="usbStart">▶ Bật webcam</button>
-          <span class="small">Webcam cắm trực tiếp vào máy: hình gần như không có độ trễ.</span>
+          <button class="primary" id="usbAdd">＋ Thêm webcam</button>
         </div>
-        <div id="panePhone" class="hidden" style="flex-direction:column;gap:8px">
-          <span class="small">Mở camera điện thoại quét mã này, rồi bấm <b>Bắt đầu phát</b>:</span>
-          <div class="qr" id="qrCam"></div>
-          <div class="link" id="linkCam"></div>
-          <button id="copyCam">📋 Chép đường link</button>
-          <label class="chk"><input type="checkbox" id="phoneAudio"> Phát tiếng từ điện thoại ra loa máy này</label>
-          <span class="small">Điện thoại và máy tính nên cùng một mạng Wi-Fi để hình nhanh nhất.</span>
-        </div>
+        <h4>🖥️ Màn hình / cửa sổ / slide</h4>
+        <button id="scrAdd">＋ Chia sẻ màn hình</button>
+        <h4>📱 Điện thoại, máy tính bảng, laptop khác</h4>
+        <span class="small">Mỗi máy quét mã này rồi bấm <b>Bắt đầu phát</b> là thành một nguồn mới:</span>
+        <div class="qr" id="qrCam"></div>
+        <div class="link" id="linkCam"></div>
+        <button id="copyCam">📋 Chép đường link</button>
       </div>
       <div class="card">
-        <h3>2. Cho máy khác xem cùng (không bắt buộc)</h3>
-        <span class="small">Học sinh / máy khác mở link hoặc quét mã để xem hình đang chiếu:</span>
+        <h3>2. Âm thanh</h3>
+        <label class="chk"><input type="checkbox" id="srcAudio" checked> Lấy tiếng từ nguồn chính (điện thoại có bật micro)</label>
+        <label class="chk"><input type="checkbox" id="micPc"> Thu micro của máy tính này</label>
+        <label class="chk"><input type="checkbox" id="monitor"> Phát tiếng nguồn chính ra loa máy này</label>
+        <span class="small">Tiếng được đưa vào bản ghi hình và gửi cho người xem.</span>
+      </div>
+      <div class="card">
+        <h3>3. Ghi hình &amp; YouTube</h3>
+        <div class="row">
+          <span class="small" style="flex:0 0 auto">Độ nét đầu ra</span>
+          <select id="outRes"><option value="720" selected>720p</option><option value="1080">1080p</option></select>
+        </div>
+        <label class="chk"><input type="checkbox" id="showNames" checked> Hiện tên nguồn khi chia khung</label>
+        <button class="danger" id="bRec">⏺ Ghi hình</button>
+        <button id="bOut">🖥 Mở cửa sổ xuất hình (cho OBS / màn hình phụ)</button>
+        <button id="bYt">📺 Hướng dẫn đưa lên YouTube</button>
+      </div>
+      <div class="card">
+        <h3>4. Cho máy khác xem (kể cả ở xa)</h3>
         <div class="qr" id="qrView"></div>
         <div class="link" id="linkView"></div>
         <button id="copyView">📋 Chép đường link</button>
+        <span class="small">Nên cho khoảng 3–5 máy xem cùng lúc.</span>
       </div>
       <div class="card">
         <h3>Phím tắt</h3>
         <div class="keys">
+          <kbd>1 … 9</kbd><span>Chọn nguồn chính</span>
+          <kbd>L</kbd><span>Đổi kiểu chia khung</span>
           <kbd>F</kbd><span>Toàn màn hình</span>
           <kbd>Space</kbd><span>Dừng / chạy tiếp hình</span>
-          <kbd>M</kbd><span>Lật gương</span>
-          <kbd>R</kbd><span>Xoay 90°</span>
+          <kbd>M</kbd><span>Lật gương nguồn chính</span>
+          <kbd>R</kbd><span>Xoay nguồn chính 90°</span>
           <kbd>+ / −</kbd><span>Phóng to / thu nhỏ (hoặc lăn chuột)</span>
           <kbd>0</kbd><span>Về cỡ gốc</span>
           <kbd>S</kbd><span>Chụp ảnh lưu về máy</span>
@@ -164,11 +220,14 @@ kbd{background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:
   </div>
 </div>
 
+<dialog id="dlg"><div id="dlgBody"></div><div class="row" id="dlgBtns"></div></dialog>
+
 <!-- ================= ĐIỆN THOẠI PHÁT ================= -->
 <div id="cam" class="view hidden">
   <div class="status"><span class="dot" id="camDot"></span><span id="camStatus">Sẵn sàng</span></div>
   <div class="preview"><video id="camVideo" autoplay playsinline muted></video></div>
   <div class="bar">
+    <input type="text" id="camName" maxlength="30" placeholder="Tên máy quay (vd: Cam bảng, Cam học sinh)">
     <div class="row">
       <button id="camFlip">🔄 Cam trước</button>
       <button id="camTorch" class="hidden">🔦 Đèn</button>
@@ -194,6 +253,12 @@ kbd{background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:
   <div class="stage" id="vStage" style="flex:1">
     <video id="vVideo" autoplay playsinline muted></video>
   </div>
+</div>
+
+<!-- ================= CỬA SỔ XUẤT HÌNH ================= -->
+<div id="outv" class="view hidden">
+  <video id="oVideo" autoplay playsinline muted></video>
+  <div class="placeholder hidden" id="oMsg"><b>Chưa có hình</b><span>Cửa sổ này phải được mở từ nút “Mở cửa sổ xuất hình” trên màn hình chiếu, và màn hình chiếu phải còn mở.</span></div>
 </div>
 
 <script>
@@ -244,6 +309,16 @@ function genId(n = 5) { let s = ''; for (let i = 0; i < n; i++) s += ALPHA[Math.
 function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
 function show(id) { document.querySelectorAll('.view').forEach(v => v.classList.add('hidden')); $(id).classList.remove('hidden'); }
 function setDot(dot, txtEl, state, text) { dot.className = 'dot ' + state; txtEl.textContent = text; }
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+function stamp() { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`; }
+function download(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000); }
+let toastT;
+function toast(msg) {
+  let el = $('#toast');
+  if (!el) { el = document.createElement('div'); el.id = 'toast'; el.className = 'toast'; document.body.appendChild(el); }
+  el.textContent = msg; el.classList.remove('hidden');
+  clearTimeout(toastT); toastT = setTimeout(() => el.classList.add('hidden'), 4500);
+}
 
 /* Giảm độ trễ phía nhận: bỏ bộ đệm phát lại */
 function lowLatencyReceivers(pc) {
@@ -276,6 +351,26 @@ function whenConnected(pc, fn) {
   pc.addEventListener('connectionstatechange', h);
   pc.addEventListener('iceconnectionstatechange', h);
 }
+/* Đọc độ trễ / đường đi từ thống kê WebRTC */
+async function rtcStat(pc, memo) {
+  const rep = await pc.getStats();
+  let inb = null, pair = null; const local = {};
+  rep.forEach(r => {
+    if (r.type === 'inbound-rtp' && r.kind === 'video') inb = r;
+    if (r.type === 'candidate-pair' && r.nominated && r.state === 'succeeded') pair = r;
+    if (r.type === 'local-candidate') local[r.id] = r;
+  });
+  if (!inb) return '';
+  let jb = 0;
+  if (memo.lastJb && inb.jitterBufferEmittedCount > memo.lastJb.n) jb = (inb.jitterBufferDelay - memo.lastJb.d) / (inb.jitterBufferEmittedCount - memo.lastJb.n) * 1000;
+  memo.lastJb = { d: inb.jitterBufferDelay, n: inb.jitterBufferEmittedCount };
+  const rtt = pair && pair.currentRoundTripTime ? pair.currentRoundTripTime * 1000 : 0;
+  const fps = inb.framesPerSecond || 0;
+  const est = Math.round(rtt / 2 + jb + (fps ? 1000 / fps : 33) + 30);
+  const lc = pair && local[pair.localCandidateId];
+  const route = lc ? (lc.candidateType === 'relay' ? 'qua máy chủ trung gian' : lc.candidateType === 'host' ? 'mạng nội bộ' : 'Internet trực tiếp') : '';
+  return `${inb.frameWidth || '?'}×${inb.frameHeight || '?'} · ${Math.round(fps)} hình/giây · trễ ≈ ${est} ms${route ? ' · ' + route : ''}`;
+}
 function makeQR(el, text) {
   el.innerHTML = '';
   try { new QRCode(el, { text, width: 340, height: 340, correctLevel: QRCode.CorrectLevel.M }); }
@@ -290,19 +385,47 @@ function toggleFull(el) {
   if (isFull()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
   else (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
 }
+function dialog(html, buttons) {
+  const d = $('#dlg');
+  $('#dlgBody').innerHTML = html;
+  const box = $('#dlgBtns'); box.innerHTML = '';
+  (buttons || [{ text: 'Đóng' }]).forEach(b => {
+    const el = document.createElement('button');
+    el.textContent = b.text; if (b.cls) el.className = b.cls;
+    el.onclick = () => { d.close(); if (b.fn) b.fn(); };
+    box.appendChild(el);
+  });
+  d.showModal();
+}
 
 /* ======================================================================
-   MÀN HÌNH CHIẾU
+   MÀN HÌNH CHIẾU — trộn nhiều nguồn vào một khung hình
    ====================================================================== */
 function studio() {
   show('#studio');
   if (location.protocol !== 'https:' && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) $('#httpWarn').classList.remove('hidden');
 
   let roomId = store('phl-room') || genId();
-  let peer = null, currentStream = null, sourceType = null, usbStream = null, camCall = null;
+  let peer = null;
   const viewers = new Map();
-  const video = $('#mainVideo'), stage = $('#stage');
-  const view = { rot: 0, mirror: false, zoom: 1, px: 0, py: 0, frozen: false };
+  const sources = [];
+  let mainId = null, subId = null, seq = 0;
+  let mode = store('phl-mode') || 'one';
+  const canvas = $('#program'), g = canvas.getContext('2d', { alpha: false });
+  const stage = $('#stage');
+  const view = { zoom: 1, px: 0, py: 0, frozen: false };
+
+  /* ---- Đầu ra: khung hình + âm thanh ---- */
+  let outRes = store('phl-out') || '720';
+  $('#outRes').value = outRes;
+  function setOutRes() { const q = QUAL[outRes]; canvas.width = q.w; canvas.height = q.h; layout(); }
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const ac = AC ? new AC() : null;
+  const dest = ac ? ac.createMediaStreamDestination() : null;
+  const outStream = canvas.captureStream(30);
+  if (dest) outStream.addTrack(dest.stream.getAudioTracks()[0]);
+  window.__phlOut = outStream; /* cửa sổ xuất hình lấy luồng này */
+  document.addEventListener('pointerdown', () => { if (ac && ac.state === 'suspended') ac.resume(); }, true);
 
   function net(state, text) { setDot($('#netDot'), $('#netText'), state, text); }
   function renderLinks() {
@@ -314,13 +437,218 @@ function studio() {
   $('#copyCam').onclick = e => copyText($('#linkCam').textContent, e.target);
   $('#copyView').onclick = e => copyText($('#linkView').textContent, e.target);
 
+  /* ---- Danh sách nguồn ---- */
+  const get = id => sources.find(s => s.id === id);
+  function uniqueName(n) {
+    let name = n, i = 2;
+    while (sources.some(s => s.name === name)) name = n + ' ' + i++;
+    return name;
+  }
+  function addSource(o) {
+    const s = { id: ++seq, mirror: false, rot: 0, stream: null, audioNode: null, status: '', statText: '', memo: {}, ...o };
+    s.name = uniqueName(o.name || 'Nguồn');
+    s.el = document.createElement('video');
+    s.el.autoplay = true; s.el.playsInline = true; s.el.muted = true;
+    s.el.addEventListener('resize', () => updThumb(s));
+    s.el.addEventListener('playing', () => { s.status = ''; updThumb(s); });
+    sources.push(s);
+    if (mainId == null) mainId = s.id;
+    else if (subId == null) subId = s.id;
+    buildThumb(s);
+    if (o.stream) attach(s, o.stream);
+    refresh();
+    return s;
+  }
+  function attach(s, stream) {
+    s.stream = stream;
+    s.el.srcObject = stream;
+    s.el.play().catch(() => {});
+    setupAudio(s);
+    stream.addEventListener('addtrack', () => { if (!s.audioNode) setupAudio(s); });
+    updThumb(s);
+  }
+  function removeSource(s, msg) {
+    const i = sources.indexOf(s);
+    if (i < 0) return;
+    sources.splice(i, 1);
+    if (s.kind !== 'phone' && s.stream) s.stream.getTracks().forEach(t => t.stop());
+    if (s.call) { const c = s.call; s.call = null; try { c.close(); } catch (e) {} }
+    if (s.audioNode) { try { s.audioNode.disconnect(); } catch (e) {} }
+    s.el.srcObject = null;
+    s.thumb.remove();
+    if (mainId === s.id) mainId = sources.length ? sources[0].id : null;
+    if (subId === s.id || subId === mainId) { const o = sources.find(x => x.id !== mainId); subId = o ? o.id : null; }
+    refresh();
+    if (msg) toast(msg);
+  }
+  function setMain(id) {
+    if (!get(id)) return;
+    if (subId === id) subId = mainId;
+    mainId = id;
+    if (subId === mainId) { const o = sources.find(x => x.id !== mainId); subId = o ? o.id : null; }
+    refresh();
+  }
+  function setSub(id) {
+    if (!get(id)) return;
+    if (id === mainId) { const o = sources.find(x => x.id !== id); if (!o) return; mainId = o.id; }
+    subId = id;
+    if (mode === 'one' || mode === 'grid') setMode('two');
+    refresh();
+  }
+  function setMode(m) { mode = m; store('phl-mode', m); refresh(); }
+
+  /* ---- Hình nhỏ của từng nguồn ---- */
+  function buildThumb(s) {
+    const t = document.createElement('div');
+    t.className = 'thumb';
+    t.innerHTML = `<div class="tv"><span class="num"></span><span class="tag"></span></div>
+      <div class="tname"></div><div class="tstat"></div>
+      <div class="tbtns">
+        <button data-a="main" title="Chọn làm hình chính">Chính</button>
+        <button data-a="sub" title="Chọn làm hình phụ (chia đôi / góc)">Phụ</button>
+        <button data-a="mirror" title="Lật gương">↔</button>
+        <button data-a="rot" title="Xoay 90°">⟳</button>
+        <button data-a="del" title="Gỡ nguồn này">✕</button>
+      </div>`;
+    t.querySelector('.tv').prepend(s.el);
+    t.querySelector('.tv').onclick = () => setMain(s.id);
+    t.querySelectorAll('[data-a]').forEach(b => b.onclick = () => {
+      const a = b.dataset.a;
+      if (a === 'main') setMain(s.id);
+      else if (a === 'sub') setSub(s.id);
+      else if (a === 'mirror') { s.mirror = !s.mirror; updThumb(s); }
+      else if (a === 'rot') { s.rot = (s.rot + 90) % 360; updThumb(s); }
+      else if (a === 'del') { if (confirm(`Gỡ nguồn "${s.name}"?`)) removeSource(s); }
+    });
+    s.thumb = t;
+    $('#srcbar').appendChild(t);
+  }
+  function updThumb(s) {
+    if (!s.thumb) return;
+    const i = sources.indexOf(s);
+    s.thumb.querySelector('.num').textContent = i + 1;
+    s.thumb.querySelector('.tname').textContent = (s.kind === 'usb' ? '🎥 ' : s.kind === 'screen' ? '🖥️ ' : '📱 ') + s.name;
+    s.thumb.querySelector('.tstat').textContent = s.status || s.statText || (s.el.videoWidth ? `${s.el.videoWidth}×${s.el.videoHeight}` : 'Đang chờ hình…');
+    s.thumb.querySelector('.tstat').title = s.thumb.querySelector('.tstat').textContent;
+    const isMain = s.id === mainId, isSub = s.id === subId && (mode === 'two' || mode === 'pip') && sources.length > 1;
+    s.thumb.classList.toggle('main', isMain);
+    s.thumb.classList.toggle('sub', isSub);
+    s.thumb.querySelector('.tag').textContent = isMain ? 'CHÍNH' : isSub ? 'PHỤ' : '';
+    s.el.style.transform = `rotate(${s.rot}deg) scaleX(${s.mirror ? -1 : 1})`;
+    s.thumb.querySelector('[data-a=mirror]').classList.toggle('on', s.mirror);
+  }
+  function refresh() {
+    sources.forEach(updThumb);
+    const has = sources.length > 0;
+    $('#placeholder').classList.toggle('hidden', has);
+    $('#toolbar').classList.toggle('hidden', !has);
+    $('#stats').classList.toggle('hidden', !has);
+    $('#srcEmpty').classList.toggle('hidden', has);
+    document.querySelectorAll('#toolbar [data-mode]').forEach(b => b.classList.toggle('on', b.dataset.mode === mode));
+    updateAudio();
+  }
+  document.querySelectorAll('#toolbar [data-mode]').forEach(b => b.onclick = () => setMode(b.dataset.mode));
+
+  /* ---- Âm thanh ---- */
+  function setupAudio(s) {
+    if (!ac || !s.stream) return;
+    const at = s.stream.getAudioTracks()[0];
+    if (!at) return;
+    try { s.audioNode = ac.createMediaStreamSource(new MediaStream([at])); } catch (e) { return; }
+    updateAudio();
+  }
+  function updateAudio() {
+    if (!ac) return;
+    sources.forEach(s => { if (s.audioNode) try { s.audioNode.disconnect(); } catch (e) {} });
+    const m = get(mainId);
+    if (m && m.audioNode && $('#srcAudio').checked) {
+      m.audioNode.connect(dest);
+      if ($('#monitor').checked) m.audioNode.connect(ac.destination);
+    }
+  }
+  $('#srcAudio').onchange = updateAudio;
+  $('#monitor').onchange = () => { if (ac) ac.resume(); updateAudio(); };
+  let micStream = null, micNode = null;
+  $('#micPc').onchange = async e => {
+    if (e.target.checked) {
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+        if (ac) { await ac.resume(); micNode = ac.createMediaStreamSource(micStream); micNode.connect(dest); }
+      } catch (err) { e.target.checked = false; alert('Không mở được micro của máy tính.'); }
+    } else {
+      if (micNode) micNode.disconnect();
+      if (micStream) micStream.getTracks().forEach(t => t.stop());
+      micNode = micStream = null;
+    }
+  };
+
+  /* ---- Vẽ khung hình đầu ra ---- */
+  function cells() {
+    const W = canvas.width, H = canvas.height;
+    const main = get(mainId);
+    if (!sources.length || !main) return [];
+    if (mode === 'one' || sources.length === 1) return [[main, 0, 0, W, H]];
+    const sub = get(subId) || sources.find(x => x.id !== mainId);
+    if (mode === 'two') return [[main, 0, 0, W / 2, H], [sub, W / 2, 0, W / 2, H]];
+    if (mode === 'pip') { const w = W * 0.3, h = H * 0.3, m = W * 0.02; return [[main, 0, 0, W, H], [sub, W - w - m, H - h - m, w, h, true]]; }
+    const n = sources.length, cols = Math.ceil(Math.sqrt(n)), rows = Math.ceil(n / cols), cw = W / cols, ch = H / rows;
+    return sources.map((s, i) => [s, (i % cols) * cw, Math.floor(i / cols) * ch, cw, ch]);
+  }
+  function drawSrc(s, x, y, w, h) {
+    const v = s.el, vw = v.videoWidth, vh = v.videoHeight;
+    g.save();
+    g.beginPath(); g.rect(x, y, w, h); g.clip();
+    g.fillStyle = '#000'; g.fillRect(x, y, w, h);
+    if (!vw || v.readyState < 2) {
+      g.fillStyle = '#888'; g.font = `${Math.max(14, h / 16)}px system-ui,sans-serif`;
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(s.name + ' – đang chờ hình…', x + w / 2, y + h / 2);
+      g.restore(); return;
+    }
+    const side = s.rot % 180 !== 0, ew = side ? vh : vw, eh = side ? vw : vh;
+    const f = Math.min(w / ew, h / eh);
+    g.translate(x + w / 2, y + h / 2);
+    g.rotate(s.rot * Math.PI / 180);
+    if (s.mirror) g.scale(-1, 1);
+    g.drawImage(v, -vw * f / 2, -vh * f / 2, vw * f, vh * f);
+    g.restore();
+  }
+  function label(s, x, y, w, h) {
+    const fs = Math.max(12, Math.min(26, h / 18));
+    g.font = `600 ${fs}px system-ui,sans-serif`; g.textAlign = 'left'; g.textBaseline = 'middle';
+    const tw = g.measureText(s.name).width;
+    g.fillStyle = 'rgba(0,0,0,.6)'; g.fillRect(x + 8, y + h - fs - 18, tw + 16, fs + 10);
+    g.fillStyle = '#fff'; g.fillText(s.name, x + 16, y + h - fs / 2 - 13);
+  }
+  function draw() {
+    if (view.frozen) return;
+    const W = canvas.width, H = canvas.height;
+    g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
+    const cs = cells();
+    if (!cs.length) {
+      g.fillStyle = '#666'; g.font = `${H / 20}px system-ui,sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText('Chưa có hình', W / 2, H / 2); return;
+    }
+    for (const [s, x, y, w, h, pip] of cs) {
+      if (pip) { g.fillStyle = '#fff'; g.fillRect(x - 3, y - 3, w + 6, h + 6); }
+      drawSrc(s, x, y, w, h);
+      if (cs.length > 1 && $('#showNames').checked) label(s, x, y, w, h);
+    }
+    if (mode === 'two' && cs.length === 2) { g.fillStyle = '#222'; g.fillRect(W / 2 - 1, 0, 2, H); }
+  }
+  /* Dùng bộ đếm trong Worker để vẫn vẽ đều khi cửa sổ bị che / thu nhỏ */
+  try {
+    const tick = new Worker(URL.createObjectURL(new Blob(['setInterval(()=>postMessage(0),33)'], { type: 'text/javascript' })));
+    tick.onmessage = draw;
+  } catch (e) { setInterval(draw, 33); }
+
   /* ---- Kết nối máy chủ tín hiệu ---- */
   function startPeer(tries = 0) {
     store('phl-room', roomId);
     renderLinks();
     net('', 'Đang kết nối máy chủ…');
     peer = new Peer(PREFIX + roomId, PEER_OPTS);
-    peer.on('open', () => net('ok', hasTurn ? 'Sẵn sàng nhận hình · xem được từ xa' : 'Sẵn sàng nhận hình · chỉ trong cùng mạng'));
+    peer.on('open', () => net('ok', hasTurn ? 'Sẵn sàng · xem được từ xa' : 'Sẵn sàng · chỉ trong cùng mạng'));
     peer.on('disconnected', () => {
       net('warn', 'Mất kết nối máy chủ, đang thử lại…');
       setTimeout(() => { if (peer && !peer.destroyed && peer.disconnected) peer.reconnect(); }, 2000);
@@ -337,47 +665,41 @@ function studio() {
       } else console.warn(err);
     });
 
-    /* Điện thoại gọi tới để phát hình */
+    /* Điện thoại / máy khác gọi tới để phát hình — mỗi máy là một nguồn */
     peer.on('call', call => {
-      if (call.metadata && call.metadata.role !== 'cam') { call.close(); return; }
-      if (camCall && camCall !== call) camCall.close();
-      camCall = call;
+      const md = call.metadata || {};
+      if (md.role !== 'cam') { call.close(); return; }
+      const old = md.key && sources.find(x => x.kind === 'phone' && x.key === md.key);
+      if (old) removeSource(old);
+      const s = addSource({ kind: 'phone', name: String(md.name || 'Điện thoại').slice(0, 30), key: md.key, call });
+      s.status = 'Đang kết nối…'; updThumb(s);
       call.answer();
-      if (sourceType !== 'usb') {
-        if (sourceType === 'phone') clearSource();
-        setPlaceholder('Điện thoại đang kết nối…', 'Chờ vài giây để hình hiện lên.');
-      }
-      call.on('stream', s => {
+      call.on('stream', st => {
         lowLatencyReceivers(call.peerConnection);
-        if (s === currentStream) return;
-        stopUsb();
-        setSource(s, 'phone');
+        if (st !== s.stream) attach(s, st);
       });
       const pc = call.peerConnection;
+      let slowT = null;
       const lost = msg => {
         clearTimeout(slowT);
-        if (camCall !== call) return;
-        camCall = null;
-        if (sourceType === 'phone' || !currentStream) clearSource(msg || 'Điện thoại đã ngừng phát', msg ? NET_HINT : '');
+        if (!sources.includes(s) || s.call !== call) return;
+        removeSource(s, msg || `"${s.name}" đã ngừng phát`);
       };
-      /* Quá 12 giây chưa có hình: báo cho thầy/cô biết lý do */
-      const slowT = setTimeout(() => {
-        if (camCall !== call || hasFrames()) return;
-        setPlaceholder('Chưa nhận được hình từ điện thoại',
-          NET_HINT + ' (trạng thái: ' + (pc ? pc.iceConnectionState : '?') + ')');
+      slowT = setTimeout(() => {
+        if (sources.includes(s) && !(s.el.videoWidth > 0)) { s.status = 'Chưa nhận được hình – mạng có thể bị chặn'; updThumb(s); }
       }, 12000);
       call.on('close', () => lost());
-      call.on('error', () => lost('Không nối được với điện thoại'));
+      call.on('error', () => lost(`Không nối được với "${s.name}"`));
       if (pc) pc.addEventListener('connectionstatechange', () => {
-        if (pc.connectionState === 'failed') lost('Không nối được với điện thoại');
+        if (pc.connectionState === 'failed') lost(`Không nối được với "${s.name}" – kiểm tra mạng`);
         else if (pc.connectionState === 'closed') lost();
       });
     });
 
-    /* Máy khác xin xem */
+    /* Máy khác xin xem: gửi khung hình đầu ra */
     peer.on('connection', conn => {
       if (!conn.metadata || conn.metadata.role !== 'viewer') return;
-      conn.on('open', () => { viewers.set(conn.peer, { conn, call: null }); updViewers(); if (currentStream) callViewer(conn.peer); });
+      conn.on('open', () => { viewers.set(conn.peer, { conn, call: null }); updViewers(); callViewer(conn.peer); });
       const bye = () => { const v = viewers.get(conn.peer); if (v && v.conn === conn) { if (v.call) v.call.close(); viewers.delete(conn.peer); updViewers(); } };
       conn.on('close', bye); conn.on('error', bye);
     });
@@ -385,165 +707,109 @@ function studio() {
   function updViewers() { $('#viewerCount').textContent = viewers.size; }
   function callViewer(id) {
     const v = viewers.get(id);
-    if (!v || !currentStream || !peer) return;
+    if (!v || !peer) return;
     if (v.call) { try { v.call.close(); } catch (e) {} }
-    const call = peer.call(id, currentStream, { metadata: { role: 'broadcast' } });
+    const call = peer.call(id, outStream, { metadata: { role: 'broadcast' } });
     v.call = call;
-    if (call) whenConnected(call.peerConnection, () => tuneSenders(call.peerConnection, 2.5e6));
+    if (call) whenConnected(call.peerConnection, () => tuneSenders(call.peerConnection, outRes === '1080' ? 4.5e6 : 2.5e6));
   }
 
-  /* ---- Nguồn hình ---- */
-  const PH_DEFAULT = $('#placeholder span').innerHTML;
-  const NET_HINT = 'Điện thoại và máy tính có thể không "thấy" nhau qua mạng (Wi-Fi trường thường chặn các máy nối thẳng với nhau). ' +
-    'Thử: cho máy tính bắt Wi-Fi phát từ chính điện thoại (điểm phát sóng), hoặc cho cả hai máy dùng chung một Wi-Fi khác, rồi bấm Bắt đầu phát lại.';
-  function setPlaceholder(title, detail) {
-    const ph = $('#placeholder');
-    ph.querySelector('b').textContent = title;
-    ph.querySelector('span').textContent = detail || '';
-    ph.classList.remove('hidden');
-  }
-  function hasFrames() { return !!currentStream && video.videoWidth > 0 && video.readyState >= 2; }
-  /* Chỉ ẩn thông báo khi hình thật sự đã về */
-  function checkFrames() {
-    if (!hasFrames()) return;
-    $('#placeholder').classList.add('hidden');
-    $('#toolbar').classList.remove('hidden');
-    $('#stats').classList.remove('hidden');
-  }
-  ['playing', 'loadeddata', 'resize'].forEach(ev => video.addEventListener(ev, checkFrames));
-  function playVideo() {
-    video.play().catch(() => { video.muted = true; video.play().catch(() => {}); });
-  }
-  function setSource(stream, type) {
-    currentStream = stream; sourceType = type;
-    video.srcObject = stream;
-    video.muted = !(type === 'phone' && $('#phoneAudio').checked);
-    playVideo();
-    view.frozen = false; updFreeze();
-    if (type === 'phone') setPlaceholder('Đang nhận hình từ điện thoại…', 'Chờ vài giây để hình hiện lên.');
-    checkFrames();
-    viewers.forEach((_, id) => callViewer(id));
-  }
-  function clearSource(msg, detail) {
-    currentStream = null; sourceType = null;
-    video.srcObject = null;
-    if (msg) setPlaceholder(msg, detail); else { setPlaceholder('Chưa có hình', ''); $('#placeholder span').innerHTML = PH_DEFAULT; }
-    $('#toolbar').classList.add('hidden');
-    $('#stats').classList.add('hidden');
-    viewers.forEach(v => { if (v.call) { v.call.close(); v.call = null; } });
-  }
-  function stopUsb() {
-    if (usbStream) { usbStream.getTracks().forEach(t => t.stop()); usbStream = null; }
-    $('#usbStart').textContent = '▶ Bật webcam';
-    $('#usbStart').className = 'primary';
-  }
-  $('#phoneAudio').onchange = () => { if (sourceType === 'phone') { video.muted = !$('#phoneAudio').checked; video.play().catch(() => {}); } };
-
+  /* ---- Thêm webcam USB ---- */
   async function listDevices() {
     try {
       const devs = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
-      const sel = $('#usbDev'), cur = sel.value || store('phl-usb') || '';
+      const sel = $('#usbDev'), cur = sel.value;
       sel.innerHTML = '<option value="">(Camera mặc định)</option>' +
-        devs.map((d, i) => `<option value="${d.deviceId}">${(d.label || 'Camera ' + (i + 1)).replace(/</g, '&lt;')}</option>`).join('');
+        devs.map((d, i) => {
+          const used = sources.some(s => s.kind === 'usb' && s.dev === d.deviceId);
+          return `<option value="${esc(d.deviceId)}">${esc(d.label || 'Camera ' + (i + 1))}${used ? ' ✓ đang dùng' : ''}</option>`;
+        }).join('');
       if ([...sel.options].some(o => o.value === cur)) sel.value = cur;
+      else { const free = devs.find(d => !sources.some(s => s.kind === 'usb' && s.dev === d.deviceId)); if (free) sel.value = free.deviceId; }
     } catch (e) {}
   }
-  async function startUsb() {
-    const q = QUAL[$('#usbQual').value];
+  const shortLabel = l => (l || 'Webcam').replace(/\s*\([0-9a-f]{4}:[0-9a-f]{4}\)/i, '').slice(0, 28);
+  async function addUsb() {
     const dev = $('#usbDev').value;
+    if (dev && sources.some(s => s.kind === 'usb' && s.dev === dev)) { toast('Webcam này đã có trong danh sách nguồn'); return; }
+    const q = QUAL[$('#usbQual').value];
     try {
-      const s = await navigator.mediaDevices.getUserMedia({
+      const st = await navigator.mediaDevices.getUserMedia({
         audio: false,
         video: { deviceId: dev ? { exact: dev } : undefined, width: { ideal: q.w }, height: { ideal: q.h }, frameRate: { ideal: 30 } }
       });
-      if (camCall) { camCall.close(); camCall = null; }
-      stopUsb();
-      usbStream = s;
-      const t = s.getVideoTracks()[0];
+      const t = st.getVideoTracks()[0];
       try { t.contentHint = 'detail'; } catch (e) {}
-      t.onended = () => { if (usbStream === s) { stopUsb(); clearSource('Webcam đã bị rút ra'); } };
-      store('phl-usb', dev); store('phl-q', $('#usbQual').value);
-      setSource(s, 'usb');
-      $('#usbStart').textContent = '■ Tắt webcam';
-      $('#usbStart').className = 'danger';
+      const realDev = (t.getSettings && t.getSettings().deviceId) || dev;
+      if (sources.some(s => s.kind === 'usb' && s.dev === realDev)) { st.getTracks().forEach(x => x.stop()); toast('Webcam này đã có trong danh sách nguồn – chọn webcam khác trong ô phía trên'); return; }
+      const s = addSource({ kind: 'usb', name: shortLabel(t.label), dev: realDev, stream: st });
+      t.onended = () => removeSource(s, `"${s.name}" đã bị rút ra`);
+      store('phl-q', $('#usbQual').value);
       listDevices();
     } catch (e) {
       alert('Không mở được webcam: ' + (e.name === 'NotAllowedError' ? 'thầy/cô chưa cho phép dùng camera.' :
-        e.name === 'NotReadableError' ? 'camera đang bị phần mềm khác dùng (Zoom, Meet…).' :
-        e.name === 'NotFoundError' ? 'không thấy webcam nào cắm vào máy.' : e.message));
+        e.name === 'NotReadableError' ? 'camera đang bị phần mềm khác dùng (Zoom, Meet…), hoặc cổng USB không đủ băng thông cho thêm webcam – thử chọn 480p hoặc cắm sang cổng USB khác.' :
+        e.name === 'NotFoundError' || e.name === 'OverconstrainedError' ? 'không thấy webcam này.' : e.message));
     }
   }
-  $('#usbStart').onclick = () => { if (usbStream) { stopUsb(); clearSource(); } else startUsb(); };
-  $('#usbDev').onchange = () => { if (usbStream) startUsb(); };
-  $('#usbQual').onchange = () => { if (usbStream) startUsb(); };
+  $('#usbAdd').onclick = addUsb;
   if (store('phl-q')) $('#usbQual').value = store('phl-q');
   if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) navigator.mediaDevices.addEventListener('devicechange', listDevices);
   listDevices();
 
-  const tabs = { usb: [$('#tabUsb'), $('#paneUsb')], phone: [$('#tabPhone'), $('#panePhone')] };
-  function setTab(k) { for (const [n, [b, p]] of Object.entries(tabs)) { b.classList.toggle('on', n === k); p.classList.toggle('hidden', n !== k); p.style.display = n === k ? 'flex' : ''; } }
-  $('#tabUsb').onclick = () => setTab('usb');
-  $('#tabPhone').onclick = () => setTab('phone');
+  /* ---- Chia sẻ màn hình ---- */
+  $('#scrAdd').onclick = async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) { alert('Trình duyệt này không chia sẻ màn hình được. Hãy dùng Chrome hoặc Edge trên máy tính.'); return; }
+    try {
+      const st = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30 } }, audio: true });
+      const t = st.getVideoTracks()[0];
+      try { t.contentHint = 'detail'; } catch (e) {}
+      const s = addSource({ kind: 'screen', name: 'Màn hình', stream: st });
+      t.onended = () => removeSource(s, 'Đã dừng chia sẻ màn hình');
+    } catch (e) { /* thầy/cô bấm Huỷ */ }
+  };
 
-  /* ---- Hiển thị: xoay, lật, phóng to, kéo ---- */
+  /* ---- Hiển thị khung hình trên màn chiếu: phóng to, kéo ---- */
   function layout() {
-    const vw = video.videoWidth || 16, vh = video.videoHeight || 9;
-    const W = stage.clientWidth, H = stage.clientHeight;
-    const side = view.rot % 180 !== 0;
-    const ew = side ? vh : vw, eh = side ? vw : vh;
-    const fit = Math.min(W / ew, H / eh);
-    video.style.width = vw * fit + 'px';
-    video.style.height = vh * fit + 'px';
+    const vw = canvas.width, vh = canvas.height, W = stage.clientWidth, H = stage.clientHeight;
+    const fit = Math.min(W / vw, H / vh);
+    canvas.style.width = vw * fit + 'px';
+    canvas.style.height = vh * fit + 'px';
     if (view.zoom <= 1) { view.px = 0; view.py = 0; }
-    const maxX = Math.max(0, (ew * fit * view.zoom - W) / 2), maxY = Math.max(0, (eh * fit * view.zoom - H) / 2);
+    const maxX = Math.max(0, (vw * fit * view.zoom - W) / 2), maxY = Math.max(0, (vh * fit * view.zoom - H) / 2);
     view.px = Math.max(-maxX, Math.min(maxX, view.px));
     view.py = Math.max(-maxY, Math.min(maxY, view.py));
-    video.style.transform = `translate(-50%,-50%) translate(${view.px}px,${view.py}px) scale(${view.zoom}) rotate(${view.rot}deg) scaleX(${view.mirror ? -1 : 1})`;
+    canvas.style.transform = `translate(-50%,-50%) translate(${view.px}px,${view.py}px) scale(${view.zoom})`;
     $('#bZoomReset').textContent = (Math.round(view.zoom * 10) / 10) + '×';
-    $('#bMirror').classList.toggle('on', view.mirror);
   }
-  video.addEventListener('loadedmetadata', layout);
-  video.addEventListener('resize', layout);
   new ResizeObserver(layout).observe(stage);
+  setOutRes();
+  $('#outRes').onchange = () => { outRes = $('#outRes').value; store('phl-out', outRes); setOutRes(); };
 
   function zoomBy(f) { view.zoom = Math.max(1, Math.min(6, view.zoom * f)); layout(); }
   function updFreeze() {
-    $('#bFreeze').textContent = view.frozen ? '▶ Chạy tiếp' : '⏸ Dừng hình';
+    $('#bFreeze').textContent = view.frozen ? '▶ Chạy' : '⏸ Dừng';
     $('#bFreeze').classList.toggle('on', view.frozen);
     $('#frozenTag').classList.toggle('hidden', !view.frozen);
   }
-  function freeze() {
-    if (!currentStream) return;
-    view.frozen = !view.frozen;
-    if (view.frozen) video.pause(); else video.play().catch(() => {});
-    updFreeze();
-  }
+  function freeze() { if (!sources.length) return; view.frozen = !view.frozen; updFreeze(); }
   function snapshot() {
-    if (!currentStream || !video.videoWidth) return;
-    const vw = video.videoWidth, vh = video.videoHeight, side = view.rot % 180 !== 0;
-    const c = document.createElement('canvas');
-    c.width = side ? vh : vw; c.height = side ? vw : vh;
-    const g = c.getContext('2d');
-    g.translate(c.width / 2, c.height / 2);
-    g.rotate(view.rot * Math.PI / 180);
-    if (view.mirror) g.scale(-1, 1);
-    g.drawImage(video, -vw / 2, -vh / 2);
-    const d = new Date(), p = n => String(n).padStart(2, '0');
-    const name = `anh-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.png`;
-    c.toBlob(b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000); });
+    if (!sources.length) return;
+    canvas.toBlob(b => download(b, `anh-${stamp()}.png`));
     stage.animate([{ filter: 'brightness(2)' }, { filter: 'none' }], 250);
   }
+  function mainDo(fn) { const m = get(mainId); if (m) { fn(m); updThumb(m); } }
   $('#bFreeze').onclick = freeze;
-  $('#bMirror').onclick = () => { view.mirror = !view.mirror; layout(); };
-  $('#bRotate').onclick = () => { view.rot = (view.rot + 90) % 360; layout(); };
+  $('#bMirror').onclick = () => mainDo(m => m.mirror = !m.mirror);
+  $('#bRotate').onclick = () => mainDo(m => m.rot = (m.rot + 90) % 360);
   $('#bZoomIn').onclick = () => zoomBy(1.25);
   $('#bZoomOut').onclick = () => zoomBy(0.8);
   $('#bZoomReset').onclick = () => { view.zoom = 1; layout(); };
   $('#bShot').onclick = snapshot;
   $('#bFull').onclick = () => toggleFull(stage);
-  document.addEventListener('fullscreenchange', () => { $('#bFull').textContent = isFull() ? '⛶ Thoát toàn màn hình' : '⛶ Toàn màn hình'; setTimeout(layout, 50); });
+  document.addEventListener('fullscreenchange', () => setTimeout(layout, 50));
 
-  stage.addEventListener('wheel', e => { if (!currentStream) return; e.preventDefault(); zoomBy(e.deltaY < 0 ? 1.12 : 1 / 1.12); }, { passive: false });
+  stage.addEventListener('wheel', e => { if (!sources.length) return; e.preventDefault(); zoomBy(e.deltaY < 0 ? 1.12 : 1 / 1.12); }, { passive: false });
   stage.addEventListener('dblclick', e => { if (!e.target.closest('.toolbar')) toggleFull(stage); });
   let drag = null;
   stage.addEventListener('pointerdown', e => { if (e.target.closest('.toolbar') || view.zoom <= 1) return; drag = { x: e.clientX, y: e.clientY, px: view.px, py: view.py }; stage.setPointerCapture(e.pointerId); });
@@ -551,15 +817,17 @@ function studio() {
   stage.addEventListener('pointerup', () => drag = null);
   stage.addEventListener('pointercancel', () => drag = null);
 
-  /* Tự ẩn thanh công cụ khi không rê chuột */
   let idleT;
-  function wake() { stage.classList.remove('idle'); clearTimeout(idleT); idleT = setTimeout(() => { if (currentStream) stage.classList.add('idle'); }, 3000); }
+  function wake() { stage.classList.remove('idle'); clearTimeout(idleT); idleT = setTimeout(() => { if (sources.length) stage.classList.add('idle'); }, 3000); }
   stage.addEventListener('pointermove', wake); stage.addEventListener('pointerdown', wake); wake();
 
+  const MODES = ['one', 'two', 'grid', 'pip'];
   document.addEventListener('keydown', e => {
-    if (e.target.matches('input,select,textarea') || e.ctrlKey || e.altKey || e.metaKey) return;
+    if (e.target.matches('input,select,textarea') || e.ctrlKey || e.altKey || e.metaKey || $('#dlg').open) return;
     const k = e.key.toLowerCase();
-    if (k === 'f') toggleFull(stage);
+    if (/^[1-9]$/.test(k)) { const s = sources[+k - 1]; if (s) setMain(s.id); }
+    else if (k === 'l') setMode(MODES[(MODES.indexOf(mode) + 1) % MODES.length]);
+    else if (k === 'f') toggleFull(stage);
     else if (k === ' ') { e.preventDefault(); freeze(); }
     else if (k === 'm') $('#bMirror').click();
     else if (k === 'r') $('#bRotate').click();
@@ -571,39 +839,93 @@ function studio() {
     wake();
   });
 
-  /* ---- Thống kê độ trễ ---- */
-  let lastJb = null;
+  /* ---- Thống kê từng nguồn ---- */
   setInterval(async () => {
-    const el = $('#stats');
-    if (!currentStream) return;
-    if (sourceType === 'usb') {
-      const st = currentStream.getVideoTracks()[0]?.getSettings() || {};
-      el.textContent = `Webcam USB · ${st.width || '?'}×${st.height || '?'} · ${Math.round(st.frameRate || 0)} hình/giây · trễ ≈ ${Math.round(1000 / (st.frameRate || 30)) + 20} ms`;
-      return;
+    for (const s of sources) {
+      try {
+        if (s.kind === 'phone') {
+          const pc = s.call && s.call.peerConnection;
+          if (pc) { lowLatencyReceivers(pc); const t = await rtcStat(pc, s.memo); if (t) s.statText = t; }
+        } else if (s.stream) {
+          const st = s.stream.getVideoTracks()[0]?.getSettings() || {};
+          s.statText = `${st.width || '?'}×${st.height || '?'} · ${Math.round(st.frameRate || 0)} hình/giây · trễ ≈ ${Math.round(1000 / (st.frameRate || 30)) + 20} ms`;
+        }
+      } catch (e) {}
+      updThumb(s);
     }
-    const pc = camCall && camCall.peerConnection;
-    if (!pc) return;
-    lowLatencyReceivers(pc);
-    try {
-      const rep = await pc.getStats();
-      let inb = null, pair = null, local = {};
-      rep.forEach(r => {
-        if (r.type === 'inbound-rtp' && r.kind === 'video') inb = r;
-        if (r.type === 'candidate-pair' && r.nominated && r.state === 'succeeded') pair = r;
-        if (r.type === 'local-candidate') local[r.id] = r;
-      });
-      if (!inb) return;
-      let jb = 0;
-      if (lastJb && inb.jitterBufferEmittedCount > lastJb.n) jb = (inb.jitterBufferDelay - lastJb.d) / (inb.jitterBufferEmittedCount - lastJb.n) * 1000;
-      lastJb = { d: inb.jitterBufferDelay, n: inb.jitterBufferEmittedCount };
-      const rtt = pair && pair.currentRoundTripTime ? pair.currentRoundTripTime * 1000 : 0;
-      const fps = inb.framesPerSecond || 0;
-      const est = Math.round(rtt / 2 + jb + (fps ? 1000 / fps : 33) + 30);
-      const lc = pair && local[pair.localCandidateId];
-      const route = lc ? (lc.candidateType === 'relay' ? 'qua máy chủ trung gian' : lc.candidateType === 'host' ? 'mạng nội bộ' : 'Internet trực tiếp') : '';
-      el.textContent = `Điện thoại · ${inb.frameWidth || '?'}×${inb.frameHeight || '?'} · ${Math.round(fps)} hình/giây · trễ ≈ ${est} ms${route ? ' · ' + route : ''}`;
-    } catch (e) {}
+    const m = get(mainId);
+    if (m) $('#stats').textContent = `${m.name} · ${m.status || m.statText}`;
   }, 1000);
+
+  /* ---- Ghi hình ---- */
+  let rec = null, recChunks = [], recT0 = 0, recTimer = null;
+  function pickMime() {
+    const list = ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
+    for (const m of list) if (window.MediaRecorder && MediaRecorder.isTypeSupported(m)) return m;
+    return '';
+  }
+  function updRec() {
+    const on = !!rec;
+    const sec = on ? Math.floor((Date.now() - recT0) / 1000) : 0;
+    const t = `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
+    $('#recInd').textContent = '● ĐANG GHI ' + t;
+    $('#recInd').classList.toggle('hidden', !on);
+    $('#bRec').textContent = on ? `■ Dừng ghi (${t})` : '⏺ Ghi hình';
+  }
+  function toggleRec() {
+    if (rec) { rec.stop(); return; }
+    if (!window.MediaRecorder) { alert('Trình duyệt này không ghi hình được. Hãy dùng Chrome hoặc Edge.'); return; }
+    if (!sources.length) { toast('Hãy thêm ít nhất một nguồn hình trước khi ghi'); return; }
+    const mime = pickMime();
+    let r;
+    try { r = new MediaRecorder(outStream, { mimeType: mime || undefined, videoBitsPerSecond: outRes === '1080' ? 6e6 : 3e6, audioBitsPerSecond: 128000 }); }
+    catch (e) { alert('Không ghi hình được: ' + e.message); return; }
+    rec = r; recChunks = [];
+    r.ondataavailable = e => { if (e.data && e.data.size) recChunks.push(e.data); };
+    r.onstop = () => {
+      const type = (r.mimeType || mime || 'video/webm').split(';')[0];
+      const ext = type.includes('mp4') ? 'mp4' : 'webm';
+      const blob = new Blob(recChunks, { type });
+      const name = `bai-giang-${stamp()}.${ext}`;
+      recChunks = []; rec = null; clearInterval(recTimer); updRec();
+      download(blob, name);
+      dialog(`<h2>✅ Đã lưu bản ghi</h2>
+        <p>File <b>${esc(name)}</b> (${(blob.size / 1048576).toFixed(1)} MB) đã được lưu vào thư mục <b>Tải xuống (Downloads)</b> của máy.</p>
+        <p>Muốn đưa lên YouTube: bấm nút bên dưới, đăng nhập YouTube, rồi kéo file vừa lưu vào trang tải lên.</p>`,
+        [{ text: 'Đóng' }, { text: '📺 Mở trang tải lên YouTube', cls: 'primary', fn: () => window.open('https://www.youtube.com/upload', '_blank') }]);
+    };
+    r.start(1000);
+    recT0 = Date.now(); recTimer = setInterval(updRec, 500); updRec();
+    toast('Bắt đầu ghi hình. Nên ghi mỗi đoạn dưới 1 giờ.');
+  }
+  $('#bRec').onclick = toggleRec;
+  window.addEventListener('beforeunload', e => { if (rec) { e.preventDefault(); e.returnValue = ''; } });
+
+  /* ---- Cửa sổ xuất hình & hướng dẫn YouTube ---- */
+  function openOut() {
+    const w = window.open(BASE + '?xuat=1', 'phl-xuat', 'width=1280,height=760');
+    if (!w) alert('Trình duyệt đang chặn cửa sổ bật lên. Bấm vào biểu tượng chặn trên thanh địa chỉ, chọn "Luôn cho phép", rồi thử lại.');
+  }
+  $('#bOut').onclick = openOut;
+  $('#bYt').onclick = () => dialog(`<h2>📺 Đưa lên YouTube</h2>
+    <p class="small">Trình duyệt web không tự đẩy hình thẳng lên YouTube được, nên có 2 cách:</p>
+    <h3>Cách 1 – Ghi hình rồi tải lên (dễ nhất)</h3>
+    <ol>
+      <li>Bấm <b>⏺ Ghi hình</b>. Dạy xong bấm <b>■ Dừng ghi</b>.</li>
+      <li>File video tự lưu vào thư mục <b>Tải xuống</b>, trang sẽ hiện nút <b>Mở trang tải lên YouTube</b>.</li>
+      <li>Kéo file vào trang YouTube, đặt tên, chọn <i>Không công khai</i> nếu chỉ gửi cho lớp.</li>
+    </ol>
+    <h3>Cách 2 – Phát trực tiếp (dùng phần mềm OBS miễn phí)</h3>
+    <ol>
+      <li>Tải và cài <b>OBS Studio</b> tại obsproject.com.</li>
+      <li>Trên trang này bấm <b>🖥 Mở cửa sổ xuất hình</b> (để cửa sổ đó mở, không thu nhỏ).</li>
+      <li>Trong OBS: khung <b>Nguồn (Sources)</b> → <b>+</b> → <b>Chụp cửa sổ (Window Capture)</b> → chọn cửa sổ <b>“Xuất hình – Phát Hình Lớp Học”</b>.</li>
+      <li>Muốn có tiếng: trong OBS thêm <b>Âm thanh đầu vào (Audio Input Capture)</b> → chọn micro.</li>
+      <li>OBS: <b>Cài đặt → Phát trực tiếp (Stream)</b> → Dịch vụ <b>YouTube</b> → <b>Kết nối tài khoản</b>.</li>
+      <li>Bấm <b>Bắt đầu phát trực tiếp</b> trong OBS.</li>
+    </ol>
+    <p class="small">Lần đầu phát trực tiếp, YouTube có thể bắt chờ tới 24 giờ để kích hoạt. Người xem YouTube sẽ thấy hình trễ khoảng 3–10 giây.</p>`,
+    [{ text: 'Đóng' }, { text: '🖥 Mở cửa sổ xuất hình', fn: openOut }]);
 
   startPeer();
 }
@@ -617,6 +939,10 @@ function camera(target) {
   const video = $('#camVideo');
   let vTrack = null, aTrack = null, facing = 'environment', running = false, peer = null, call = null, retryT = null, wakeLock = null, torchOn = false;
   const status = (s, t) => setDot($('#camDot'), $('#camStatus'), s, t);
+  let key = store('phl-key'); if (!key) { key = genId(8); store('phl-key', key); }
+  $('#camName').value = store('phl-name') || '';
+  $('#camName').onchange = () => { store('phl-name', $('#camName').value.trim()); if (running) dial(); };
+  const camName = () => $('#camName').value.trim() || 'Điện thoại';
 
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     status('err', 'Trình duyệt này không dùng được camera. Hãy mở bằng Chrome hoặc Safari (địa chỉ https).');
@@ -659,19 +985,21 @@ function camera(target) {
     if (peer.disconnected) { peer.reconnect(); return; }
     hangup();
     status('warn', 'Đang nối với màn hình chiếu ' + target + '…');
-    const c = peer.call(PREFIX + target, stream(), { metadata: { role: 'cam' } });
+    const c = peer.call(PREFIX + target, stream(), { metadata: { role: 'cam', name: camName(), key } });
     if (!c) return retry('Không gọi được, đang thử lại…');
     call = c;
     const pc = c.peerConnection;
     whenConnected(pc, () => {
       if (call !== c) return;
-      status('ok', '● ĐANG PHÁT lên màn hình chiếu ' + target);
+      status('ok', '● ĐANG PHÁT "' + camName() + '" lên màn hình chiếu ' + target);
       tuneSenders(pc, QUAL[$('#camQual').value].br);
     });
+    const notUp = () => call === c && pc.connectionState !== 'connected' && pc.iceConnectionState !== 'connected';
     setTimeout(() => {
-      if (call === c && pc.connectionState !== 'connected' && pc.iceConnectionState !== 'connected')
-        status('err', 'Đã tìm thấy máy chiếu nhưng chưa truyền được hình. Wi-Fi có thể chặn hai máy nối nhau: thử cho máy tính bắt điểm phát sóng (hotspot) của điện thoại này.');
+      if (notUp()) status('err', 'Đã tìm thấy máy chiếu nhưng chưa truyền được hình. Kiểm tra mạng, hoặc thử cho máy tính bắt điểm phát sóng (hotspot) của điện thoại này.');
     }, 12000);
+    /* Gọi nhầm vào máy chiếu cũ (vừa tải lại trang) thì sẽ treo mãi — gọi lại */
+    setTimeout(() => { if (notUp()) retry('Chưa có hình, đang gọi lại…'); }, 20000);
     let discT = null;
     pc.addEventListener('connectionstatechange', () => {
       if (call !== c) return;
@@ -736,7 +1064,7 @@ function camera(target) {
     catch (e) { torchOn = false; }
   };
 
-  status('', 'Sẵn sàng phát lên màn hình chiếu mã ' + target + ' – bấm Bắt đầu phát');
+  status('', 'Sẵn sàng phát lên màn hình chiếu mã ' + target + ' – đặt tên máy quay rồi bấm Bắt đầu phát');
   prepare();
 }
 
@@ -758,7 +1086,7 @@ function viewer(target) {
     status('warn', 'Đang nối với phòng ' + target + '…');
     const c = peer.connect(PREFIX + target, { metadata: { role: 'viewer' }, reliable: true });
     conn = c;
-    c.on('open', () => { if (conn === c) status('warn', 'Đã vào phòng ' + target + ', chờ thầy/cô bật hình…'); });
+    c.on('open', () => { if (conn === c) status('warn', 'Đã vào phòng ' + target + ', chờ hình…'); });
     const lost = () => { if (conn !== c) return; conn = null; status('warn', 'Mất kết nối, đang nối lại…'); retryT = setTimeout(connect, 3000); };
     c.on('close', lost); c.on('error', lost);
   }
@@ -782,18 +1110,36 @@ function viewer(target) {
         status('ok', '● Đang xem trực tiếp phòng ' + target);
       });
       call.on('close', () => { if (curCall === call) { curCall = null; video.srcObject = null; status('warn', 'Thầy/cô đã tắt hình, đang chờ…'); } });
-      setInterval(() => lowLatencyReceivers(call.peerConnection), 2000);
     });
   }
+  setInterval(() => { if (curCall) lowLatencyReceivers(curCall.peerConnection); }, 2000);
   $('#vFull').onclick = () => toggleFull($('#vStage'));
   $('#vSound').onclick = () => { video.muted = !video.muted; video.play().catch(() => {}); $('#vSound').textContent = video.muted ? '🔇 Bật tiếng' : '🔊 Tắt tiếng'; };
   $('#vStage').addEventListener('dblclick', () => toggleFull($('#vStage')));
   startPeer();
 }
 
+/* ======================================================================
+   CỬA SỔ XUẤT HÌNH (cho OBS hoặc màn hình phụ)
+   ====================================================================== */
+function output() {
+  show('#outv');
+  document.title = 'Xuất hình – Phát Hình Lớp Học';
+  const v = $('#oVideo');
+  function hook() {
+    let s = null;
+    try { s = window.opener && !window.opener.closed && window.opener.__phlOut; } catch (e) {}
+    if (s) { if (v.srcObject !== s) { v.srcObject = s; v.play().catch(() => {}); } $('#oMsg').classList.add('hidden'); }
+    else { v.srcObject = null; $('#oMsg').classList.remove('hidden'); }
+  }
+  hook(); setInterval(hook, 2000);
+  $('#outv').addEventListener('dblclick', () => toggleFull($('#outv')));
+}
+
 /* ---- Khởi động theo đường link ---- */
 (function boot() {
   const clean = v => (v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (params.get('xuat')) { output(); return; }
   if (typeof Peer === 'undefined') {
     document.body.innerHTML = '<div style="padding:30px;font-size:18px">Không tải được thư viện kết nối. Kiểm tra Internet rồi tải lại trang.</div>';
     return;
