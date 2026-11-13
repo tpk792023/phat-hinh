@@ -212,6 +212,27 @@ const PEER_OPTS = {
     sdpSemantics: 'unified-plan'
   }
 };
+/* Máy chủ trung gian (TURN) riêng qua Cloudflare Worker — để trống nếu chưa có */
+const TURN_URL = '';
+let hasTurn = false;
+async function loadTurn() {
+  if (!TURN_URL) return;
+  try {
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), 5000);
+    const r = await fetch(TURN_URL, { signal: ctl.signal, cache: 'no-store' });
+    clearTimeout(t);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    let list = Array.isArray(j.iceServers) ? j.iceServers : [j.iceServers];
+    /* Trình duyệt chặn cổng 53, bỏ đi để kết nối nhanh hơn */
+    list = list.filter(Boolean).map(s => {
+      const urls = (Array.isArray(s.urls) ? s.urls : [s.urls]).filter(u => !/:53(\?|$)/.test(u));
+      return { ...s, urls };
+    }).filter(s => s.urls.length);
+    if (list.length) { PEER_OPTS.config.iceServers.push(...list); hasTurn = true; }
+  } catch (e) { console.warn('Không lấy được máy chủ trung gian:', e); }
+}
 const QUAL = { 480: { w: 854, h: 480, br: 1.2e6 }, 720: { w: 1280, h: 720, br: 2.5e6 }, 1080: { w: 1920, h: 1080, br: 4.5e6 } };
 const ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
@@ -295,7 +316,7 @@ function studio() {
     renderLinks();
     net('', 'Đang kết nối máy chủ…');
     peer = new Peer(PREFIX + roomId, PEER_OPTS);
-    peer.on('open', () => net('ok', 'Sẵn sàng nhận hình'));
+    peer.on('open', () => net('ok', hasTurn ? 'Sẵn sàng nhận hình · xem được từ xa' : 'Sẵn sàng nhận hình · chỉ trong cùng mạng'));
     peer.on('disconnected', () => {
       net('warn', 'Mất kết nối máy chủ, đang thử lại…');
       setTimeout(() => { if (peer && !peer.destroyed && peer.disconnected) peer.reconnect(); }, 2000);
@@ -774,7 +795,7 @@ function viewer(target) {
     return;
   }
   const p = clean(params.get('phat')), x = clean(params.get('xem'));
-  if (p) camera(p); else if (x) viewer(x); else studio();
+  loadTurn().then(() => { if (p) camera(p); else if (x) viewer(x); else studio(); });
 })();
 </script>
 </body>
