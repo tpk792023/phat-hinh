@@ -201,7 +201,17 @@ const $ = s => document.querySelector(s);
 const params = new URLSearchParams(location.search);
 const PREFIX = 'dphinhlop-';
 const BASE = location.origin + location.pathname;
-const PEER_OPTS = { debug: 1 };
+const PEER_OPTS = {
+  debug: 1,
+  config: {
+    iceServers: [
+      { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
+      { urls: 'stun:stun.cloudflare.com:3478' },
+      { urls: ['turn:eu-0.turn.peerjs.com:3478', 'turn:us-0.turn.peerjs.com:3478'], username: 'peerjs', credential: 'peerjsp' }
+    ],
+    sdpSemantics: 'unified-plan'
+  }
+};
 const QUAL = { 480: { w: 854, h: 480, br: 1.2e6 }, 720: { w: 1280, h: 720, br: 2.5e6 }, 1080: { w: 1920, h: 1080, br: 4.5e6 } };
 const ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
@@ -308,21 +318,35 @@ function studio() {
       if (camCall && camCall !== call) camCall.close();
       camCall = call;
       call.answer();
+      if (sourceType !== 'usb') {
+        if (sourceType === 'phone') clearSource();
+        setPlaceholder('Điện thoại đang kết nối…', 'Chờ vài giây để hình hiện lên.');
+      }
       call.on('stream', s => {
         lowLatencyReceivers(call.peerConnection);
         if (s === currentStream) return;
         stopUsb();
         setSource(s, 'phone');
       });
-      const lost = () => {
+      const pc = call.peerConnection;
+      const lost = msg => {
+        clearTimeout(slowT);
         if (camCall !== call) return;
         camCall = null;
-        if (sourceType === 'phone') clearSource('Điện thoại đã ngừng phát');
+        if (sourceType === 'phone' || !currentStream) clearSource(msg || 'Điện thoại đã ngừng phát', msg ? NET_HINT : '');
       };
-      call.on('close', lost);
-      call.on('error', lost);
-      const pc = call.peerConnection;
-      if (pc) pc.addEventListener('connectionstatechange', () => { if (['failed', 'closed'].includes(pc.connectionState)) lost(); });
+      /* Quá 12 giây chưa có hình: báo cho thầy/cô biết lý do */
+      const slowT = setTimeout(() => {
+        if (camCall !== call || hasFrames()) return;
+        setPlaceholder('Chưa nhận được hình từ điện thoại',
+          NET_HINT + ' (trạng thái: ' + (pc ? pc.iceConnectionState : '?') + ')');
+      }, 12000);
+      call.on('close', () => lost());
+      call.on('error', () => lost('Không nối được với điện thoại'));
+      if (pc) pc.addEventListener('connectionstatechange', () => {
+        if (pc.connectionState === 'failed') lost('Không nối được với điện thoại');
+        else if (pc.connectionState === 'closed') lost();
+      });
     });
 
     /* Máy khác xin xem */
@@ -344,23 +368,41 @@ function studio() {
   }
 
   /* ---- Nguồn hình ---- */
+  const PH_DEFAULT = $('#placeholder span').innerHTML;
+  const NET_HINT = 'Điện thoại và máy tính có thể không "thấy" nhau qua mạng (Wi-Fi trường thường chặn các máy nối thẳng với nhau). ' +
+    'Thử: cho máy tính bắt Wi-Fi phát từ chính điện thoại (điểm phát sóng), hoặc cho cả hai máy dùng chung một Wi-Fi khác, rồi bấm Bắt đầu phát lại.';
+  function setPlaceholder(title, detail) {
+    const ph = $('#placeholder');
+    ph.querySelector('b').textContent = title;
+    ph.querySelector('span').textContent = detail || '';
+    ph.classList.remove('hidden');
+  }
+  function hasFrames() { return !!currentStream && video.videoWidth > 0 && video.readyState >= 2; }
+  /* Chỉ ẩn thông báo khi hình thật sự đã về */
+  function checkFrames() {
+    if (!hasFrames()) return;
+    $('#placeholder').classList.add('hidden');
+    $('#toolbar').classList.remove('hidden');
+    $('#stats').classList.remove('hidden');
+  }
+  ['playing', 'loadeddata', 'resize'].forEach(ev => video.addEventListener(ev, checkFrames));
+  function playVideo() {
+    video.play().catch(() => { video.muted = true; video.play().catch(() => {}); });
+  }
   function setSource(stream, type) {
     currentStream = stream; sourceType = type;
     video.srcObject = stream;
     video.muted = !(type === 'phone' && $('#phoneAudio').checked);
-    video.play().catch(() => {});
+    playVideo();
     view.frozen = false; updFreeze();
-    $('#placeholder').classList.add('hidden');
-    $('#toolbar').classList.remove('hidden');
-    $('#stats').classList.remove('hidden');
+    if (type === 'phone') setPlaceholder('Đang nhận hình từ điện thoại…', 'Chờ vài giây để hình hiện lên.');
+    checkFrames();
     viewers.forEach((_, id) => callViewer(id));
   }
-  function clearSource(msg) {
+  function clearSource(msg, detail) {
     currentStream = null; sourceType = null;
     video.srcObject = null;
-    const ph = $('#placeholder');
-    ph.querySelector('b').textContent = msg || 'Chưa có hình';
-    ph.classList.remove('hidden');
+    if (msg) setPlaceholder(msg, detail); else { setPlaceholder('Chưa có hình', ''); $('#placeholder span').innerHTML = PH_DEFAULT; }
     $('#toolbar').classList.add('hidden');
     $('#stats').classList.add('hidden');
     viewers.forEach(v => { if (v.call) { v.call.close(); v.call = null; } });
@@ -601,6 +643,10 @@ function camera(target) {
       status('ok', '● ĐANG PHÁT lên màn hình chiếu ' + target);
       tuneSenders(pc, QUAL[$('#camQual').value].br);
     });
+    setTimeout(() => {
+      if (call === c && pc.connectionState !== 'connected' && pc.iceConnectionState !== 'connected')
+        status('err', 'Đã tìm thấy máy chiếu nhưng chưa truyền được hình. Wi-Fi có thể chặn hai máy nối nhau: thử cho máy tính bắt điểm phát sóng (hotspot) của điện thoại này.');
+    }, 12000);
     let discT = null;
     pc.addEventListener('connectionstatechange', () => {
       if (call !== c) return;
