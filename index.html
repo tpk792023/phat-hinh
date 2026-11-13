@@ -213,7 +213,7 @@ const PEER_OPTS = {
   }
 };
 /* Máy chủ trung gian (TURN) riêng qua Cloudflare Worker — để trống nếu chưa có */
-const TURN_URL = '';
+const TURN_URL = 'https://phat-hinh-turn.phuockhai79.workers.dev/';
 let hasTurn = false;
 async function loadTurn() {
   if (!TURN_URL) return;
@@ -230,7 +230,11 @@ async function loadTurn() {
       const urls = (Array.isArray(s.urls) ? s.urls : [s.urls]).filter(u => !/:53(\?|$)/.test(u));
       return { ...s, urls };
     }).filter(s => s.urls.length);
-    if (list.length) { PEER_OPTS.config.iceServers.push(...list); hasTurn = true; }
+    if (list.length) {
+      PEER_OPTS.config.iceServers.push(...list); hasTurn = true;
+      /* ?relay=1: ép đi qua máy chủ trung gian (để thử) */
+      if (params.get('relay') === '1') PEER_OPTS.config.iceTransportPolicy = 'relay';
+    }
   } catch (e) { console.warn('Không lấy được máy chủ trung gian:', e); }
 }
 const QUAL = { 480: { w: 854, h: 480, br: 1.2e6 }, 720: { w: 1280, h: 720, br: 2.5e6 }, 1080: { w: 1920, h: 1080, br: 4.5e6 } };
