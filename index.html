@@ -6,6 +6,9 @@
 <title>Phát Hình Lớp Học</title>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@700;800&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#0f1115; --panel:#181b22; --panel2:#20242d; --line:#2d323d;
@@ -22,7 +25,14 @@ button.primary{background:var(--accent);border-color:var(--accent);color:#fff;fo
 button.primary:hover{background:var(--accent2)}
 button.danger{background:var(--err);border-color:var(--err);color:#fff;font-weight:600}
 button.on{background:#1e3a8a;border-color:var(--accent)}
-select,input[type=text]{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 8px;width:100%}
+select,input[type=text],textarea{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 8px;width:100%}
+textarea{font:inherit;color:inherit;resize:vertical}
+.emojis{display:flex;flex-wrap:wrap;gap:6px}
+.emojis button{font-size:22px;padding:4px 8px;line-height:1.2}
+.emojis button:active{transform:scale(1.25)}
+.vemo{display:flex;justify-content:center;gap:8px;padding:8px;background:var(--panel);border-top:1px solid var(--line);flex-wrap:wrap}
+.vemo button{font-size:26px;padding:4px 10px;line-height:1.2;transition:transform .1s}
+.vemo button.pop{transform:scale(1.35)}
 .hidden{display:none!important}
 .dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--muted);margin-right:6px;vertical-align:middle}
 .dot.ok{background:var(--ok)} .dot.warn{background:var(--warn)} .dot.err{background:var(--err)}
@@ -177,6 +187,28 @@ dialog .row > *{flex:0 0 auto}
         <button id="copyCam">📋 Chép đường link</button>
       </div>
       <div class="card">
+        <h3>✨ Chữ &amp; cảm xúc trên hình</h3>
+        <label class="chk"><input type="checkbox" id="ovLive" checked> Hiện nhãn 🔴 LIVE (kèm số người xem)</label>
+        <label class="chk"><input type="checkbox" id="ovBanner" checked> Hiện dòng chữ dưới hình</label>
+        <textarea id="ovText" rows="4"></textarea>
+        <div class="row">
+          <select id="ovStyle" title="Cách hiện chữ">
+            <option value="auto">Dài thì tự chạy chữ</option>
+            <option value="scroll">Luôn chạy chữ</option>
+            <option value="static">Đứng yên (thu nhỏ cho vừa)</option>
+          </select>
+          <select id="ovColor" title="Màu dải chữ">
+            <option value="red">Đỏ – vàng</option>
+            <option value="blue">Xanh dương</option>
+            <option value="green">Xanh lá</option>
+            <option value="purple">Tím</option>
+          </select>
+        </div>
+        <h4>Thả cảm xúc bay lên hình</h4>
+        <div class="emojis" id="ovEmojis"></div>
+        <span class="small">Người xem từ xa cũng bấm thả cảm xúc được. Chữ và cảm xúc có trong bản ghi hình và trên YouTube.</span>
+      </div>
+      <div class="card">
         <h3>2. Âm thanh</h3>
         <label class="chk"><input type="checkbox" id="srcAudio" checked> Lấy tiếng từ nguồn chính (điện thoại có bật micro)</label>
         <label class="chk"><input type="checkbox" id="micPc"> Thu micro của máy tính này</label>
@@ -253,6 +285,7 @@ dialog .row > *{flex:0 0 auto}
   <div class="stage" id="vStage" style="flex:1">
     <video id="vVideo" autoplay playsinline muted></video>
   </div>
+  <div class="vemo" id="vEmo"></div>
 </div>
 
 <!-- ================= CỬA SỔ XUẤT HÌNH ================= -->
@@ -304,6 +337,9 @@ async function loadTurn() {
 }
 const QUAL = { 480: { w: 854, h: 480, br: 1.2e6 }, 720: { w: 1280, h: 720, br: 2.5e6 }, 1080: { w: 1920, h: 1080, br: 4.5e6 } };
 const ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const EMOJIS = ['❤️', '👏', '🎉', '💐', '🌸', '👍', '😍', '🙏'];
+const EMOJI_FONT = '"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif';
+const BANNER_DEFAULT = '💐 Tập thể Trường Tiểu học và Trung học cơ sở Đa Phước - Vĩnh Hậu tổ chức kỉ niệm 44 năm Ngày Nhà giáo Việt Nam 💐';
 
 function genId(n = 5) { let s = ''; for (let i = 0; i < n; i++) s += ALPHA[Math.floor(Math.random() * ALPHA.length)]; return s; }
 function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
@@ -411,14 +447,16 @@ function studio() {
   const sources = [];
   let mainId = null, subId = null, seq = 0;
   let mode = store('phl-mode') || 'one';
-  const canvas = $('#program'), g = canvas.getContext('2d', { alpha: false });
+  /* canvas = khung đầu ra (nguồn hình + chữ + cảm xúc); base = chỉ nguồn hình (để dừng hình mà chữ vẫn chạy) */
+  const canvas = $('#program'), pg = canvas.getContext('2d', { alpha: false });
+  const base = document.createElement('canvas'), g = base.getContext('2d', { alpha: false });
   const stage = $('#stage');
   const view = { zoom: 1, px: 0, py: 0, frozen: false };
 
   /* ---- Đầu ra: khung hình + âm thanh ---- */
   let outRes = store('phl-out') || '720';
   $('#outRes').value = outRes;
-  function setOutRes() { const q = QUAL[outRes]; canvas.width = q.w; canvas.height = q.h; layout(); }
+  function setOutRes() { const q = QUAL[outRes]; canvas.width = base.width = q.w; canvas.height = base.height = q.h; layout(); }
   const AC = window.AudioContext || window.webkitAudioContext;
   const ac = AC ? new AC() : null;
   const dest = ac ? ac.createMediaStreamDestination() : null;
@@ -584,7 +622,7 @@ function studio() {
 
   /* ---- Vẽ khung hình đầu ra ---- */
   function cells() {
-    const W = canvas.width, H = canvas.height;
+    const W = canvas.width, H = canvas.height - bannerH();
     const main = get(mainId);
     if (!sources.length || !main) return [];
     if (mode === 'one' || sources.length === 1) return [[main, 0, 0, W, H]];
@@ -620,10 +658,9 @@ function studio() {
     g.fillStyle = 'rgba(0,0,0,.6)'; g.fillRect(x + 8, y + h - fs - 18, tw + 16, fs + 10);
     g.fillStyle = '#fff'; g.fillText(s.name, x + 16, y + h - fs / 2 - 13);
   }
-  function draw() {
-    if (view.frozen) return;
-    const W = canvas.width, H = canvas.height;
-    g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
+  function drawBase() {
+    const W = canvas.width, H = canvas.height - bannerH();
+    g.fillStyle = '#000'; g.fillRect(0, 0, base.width, base.height);
     const cs = cells();
     if (!cs.length) {
       g.fillStyle = '#666'; g.font = `${H / 20}px system-ui,sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
@@ -636,6 +673,117 @@ function studio() {
     }
     if (mode === 'two' && cs.length === 2) { g.fillStyle = '#222'; g.fillRect(W / 2 - 1, 0, 2, H); }
   }
+  function draw() {
+    if (!view.frozen) drawBase();
+    pg.drawImage(base, 0, 0);
+    drawOverlay(performance.now());
+  }
+
+  /* ---- Chữ, nhãn LIVE, cảm xúc vẽ đè lên khung hình ---- */
+  const THEMES = {
+    red: ['#c81e1e', '#7f1212', '#facc15'], blue: ['#1d4ed8', '#1e2a6b', '#7dd3fc'],
+    green: ['#15803d', '#0b3d20', '#fde047'], purple: ['#7e22ce', '#3b0d63', '#f9a8d4']
+  };
+  const ov = {
+    live: store('phl-ovLive') !== '0',
+    banner: store('phl-ovBanner') !== '0',
+    text: store('phl-ovText') || BANNER_DEFAULT,
+    style: store('phl-ovStyle') || 'auto',
+    color: store('phl-ovColor') || 'red'
+  };
+  $('#ovLive').checked = ov.live; $('#ovBanner').checked = ov.banner; $('#ovText').value = ov.text;
+  $('#ovStyle').value = ov.style; $('#ovColor').value = ov.color;
+  $('#ovLive').onchange = e => { ov.live = e.target.checked; store('phl-ovLive', ov.live ? '1' : '0'); };
+  $('#ovBanner').onchange = e => { ov.banner = e.target.checked; store('phl-ovBanner', ov.banner ? '1' : '0'); };
+  $('#ovText').oninput = e => { ov.text = e.target.value.replace(/\s+/g, ' ').trim(); store('phl-ovText', e.target.value); };
+  $('#ovStyle').onchange = e => { ov.style = e.target.value; store('phl-ovStyle', ov.style); };
+  $('#ovColor').onchange = e => { ov.color = e.target.value; store('phl-ovColor', ov.color); };
+  function bannerH() { return ov.banner && ov.text ? Math.round(canvas.height * 0.1) : 0; }
+  const FONT = '"Be Vietnam Pro",system-ui,sans-serif';
+  if (document.fonts && document.fonts.load) document.fonts.load(`800 40px "Be Vietnam Pro"`).catch(() => {});
+  let marqueeX = null, lastT = 0;
+  function drawOverlay(now) {
+    const W = canvas.width, H = canvas.height, bh = bannerH();
+    const dt = lastT ? Math.min(0.1, (now - lastT) / 1000) : 0; lastT = now;
+    pg.save();
+    /* Dải chữ dưới hình */
+    if (bh) {
+      const y = H - bh, [c1, c2, gold] = THEMES[ov.color] || THEMES.red;
+      const gr = pg.createLinearGradient(0, y, 0, H); gr.addColorStop(0, c1); gr.addColorStop(1, c2);
+      pg.fillStyle = gr; pg.fillRect(0, y, W, bh);
+      pg.fillStyle = gold; pg.fillRect(0, y, W, Math.max(3, bh * 0.05));
+      let fs = Math.round(bh * 0.5);
+      pg.font = `800 ${fs}px ${FONT}`;
+      let tw = pg.measureText(ov.text).width;
+      const pad = W * 0.025;
+      const scroll = ov.style === 'scroll' || (ov.style === 'auto' && tw > W - pad * 2);
+      pg.textBaseline = 'middle'; pg.fillStyle = '#fff';
+      pg.shadowColor = 'rgba(0,0,0,.55)'; pg.shadowBlur = fs * 0.15; pg.shadowOffsetY = fs * 0.05;
+      const ty = y + bh * 0.54;
+      pg.beginPath(); pg.rect(0, y, W, bh); pg.clip();
+      if (scroll) {
+        const speed = W / 9; /* điểm ảnh mỗi giây */
+        if (marqueeX === null) marqueeX = W;
+        marqueeX -= speed * dt;
+        if (marqueeX < -tw) marqueeX = W;
+        pg.textAlign = 'left'; pg.fillText(ov.text, marqueeX, ty);
+      } else {
+        marqueeX = null;
+        if (tw > W - pad * 2) { fs = Math.floor(fs * (W - pad * 2) / tw); pg.font = `800 ${fs}px ${FONT}`; }
+        pg.textAlign = 'center'; pg.fillText(ov.text, W / 2, ty);
+      }
+      pg.restore(); pg.save();
+    }
+    /* Nhãn LIVE nhấp nháy + số người xem */
+    if (ov.live) {
+      const fs = Math.round(H * 0.035), x = W * 0.02, y = H * 0.03, ph = fs * 0.55;
+      const txt = 'LIVE', eye = viewers.size ? `  👀 ${viewers.size}` : '';
+      pg.font = `800 ${fs}px ${FONT}`;
+      const w1 = pg.measureText(txt).width + fs * 1.6;
+      pg.fillStyle = '#e11d48'; roundRect(pg, x, y, w1, fs * 1.6, fs * 0.3); pg.fill();
+      pg.globalAlpha = 0.55 + 0.45 * Math.sin(now / 250);
+      pg.fillStyle = '#fff'; pg.beginPath(); pg.arc(x + fs * 0.65, y + fs * 0.8, fs * 0.28, 0, Math.PI * 2); pg.fill();
+      pg.globalAlpha = 1;
+      pg.textBaseline = 'middle'; pg.textAlign = 'left'; pg.fillText(txt, x + fs * 1.1, y + fs * 0.85);
+      if (eye) {
+        pg.font = `800 ${fs}px ${FONT}`;
+        const w2 = pg.measureText(eye.trim()).width + ph * 2;
+        pg.fillStyle = 'rgba(0,0,0,.6)'; roundRect(pg, x + w1 + fs * 0.3, y, w2, fs * 1.6, fs * 0.3); pg.fill();
+        pg.fillStyle = '#fff'; pg.fillText(eye.trim(), x + w1 + fs * 0.3 + ph, y + fs * 0.85);
+      }
+    }
+    /* Cảm xúc bay lên */
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const p = parts[i], age = (now - p.t0) / 1000;
+      if (age * 1000 > p.life) { parts.splice(i, 1); continue; }
+      const k = age * 1000 / p.life;
+      pg.globalAlpha = Math.max(0, 1 - k * k);
+      pg.font = `${p.size}px ${EMOJI_FONT}`; pg.textAlign = 'center'; pg.textBaseline = 'middle';
+      const sc = Math.min(1, age * 5);
+      pg.save();
+      pg.translate(p.x + Math.sin(age * 3 + p.ph) * W * 0.015, p.y + p.vy * age);
+      pg.scale(sc, sc);
+      pg.fillText(p.e, 0, 0);
+      pg.restore();
+    }
+    pg.restore();
+  }
+  function roundRect(c, x, y, w, h, r) {
+    c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+  }
+  const parts = [];
+  function spawnEmoji(e) {
+    if (!EMOJIS.includes(e) || parts.length > 80) return;
+    const W = canvas.width, H = canvas.height;
+    parts.push({
+      e, t0: performance.now(), life: 2800 + Math.random() * 1200, ph: Math.random() * 6,
+      x: W * (0.78 + Math.random() * 0.17), y: H - bannerH() - H * 0.06,
+      vy: -H * (0.16 + Math.random() * 0.1), size: Math.round(H * (0.055 + Math.random() * 0.03))
+    });
+  }
+  const emoBox = $('#ovEmojis');
+  EMOJIS.forEach(e => { const b = document.createElement('button'); b.textContent = e; b.onclick = () => { for (let i = 0; i < 3; i++) setTimeout(() => spawnEmoji(e), i * 120); }; emoBox.appendChild(b); });
   /* Dùng bộ đếm trong Worker để vẫn vẽ đều khi cửa sổ bị che / thu nhỏ */
   try {
     const tick = new Worker(URL.createObjectURL(new Blob(['setInterval(()=>postMessage(0),33)'], { type: 'text/javascript' })));
@@ -700,6 +848,14 @@ function studio() {
     peer.on('connection', conn => {
       if (!conn.metadata || conn.metadata.role !== 'viewer') return;
       conn.on('open', () => { viewers.set(conn.peer, { conn, call: null }); updViewers(); callViewer(conn.peer); });
+      /* Người xem thả cảm xúc — giới hạn 4 cái mỗi giây cho mỗi máy */
+      let hits = [];
+      conn.on('data', d => {
+        if (!d || d.t !== 'emoji') return;
+        const now = Date.now(); hits = hits.filter(t => now - t < 1000);
+        if (hits.length >= 4) return;
+        hits.push(now); spawnEmoji(d.e);
+      });
       const bye = () => { const v = viewers.get(conn.peer); if (v && v.conn === conn) { if (v.call) v.call.close(); viewers.delete(conn.peer); updViewers(); } };
       conn.on('close', bye); conn.on('error', bye);
     });
@@ -1113,6 +1269,14 @@ function viewer(target) {
     });
   }
   setInterval(() => { if (curCall) lowLatencyReceivers(curCall.peerConnection); }, 2000);
+  EMOJIS.forEach(e => {
+    const b = document.createElement('button'); b.textContent = e; b.title = 'Thả cảm xúc lên màn hình';
+    b.onclick = () => {
+      if (conn && conn.open) conn.send({ t: 'emoji', e });
+      b.classList.add('pop'); setTimeout(() => b.classList.remove('pop'), 150);
+    };
+    $('#vEmo').appendChild(b);
+  });
   $('#vFull').onclick = () => toggleFull($('#vStage'));
   $('#vSound').onclick = () => { video.muted = !video.muted; video.play().catch(() => {}); $('#vSound').textContent = video.muted ? '🔇 Bật tiếng' : '🔊 Tắt tiếng'; };
   $('#vStage').addEventListener('dblclick', () => toggleFull($('#vStage')));
