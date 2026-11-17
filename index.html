@@ -51,6 +51,9 @@ header h1{font-size:17px;margin:0;font-weight:700}
 .stage canvas,.stage video{position:absolute;left:50%;top:50%;transform-origin:center;background:#000}
 .placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);text-align:center;padding:20px;gap:8px;background:#000}
 .placeholder b{color:var(--text);font-size:20px}
+.placeholder.logo-bg{background:radial-gradient(circle at center,#1e3a6e 0%,#05080f 75%)}
+.ph-logo{width:min(220px,38vh);height:auto;filter:drop-shadow(0 6px 24px rgba(0,0,0,.5))}
+.ph-logo.big{width:min(72vh,80%)}
 .placeholder > *{max-width:min(760px,100%);overflow-wrap:anywhere}
 .toolbar{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;gap:6px;flex-wrap:wrap;justify-content:center;align-items:center;
   background:rgba(15,17,21,.85);border:1px solid var(--line);border-radius:12px;padding:6px;transition:opacity .3s;max-width:calc(100% - 20px)}
@@ -135,7 +138,8 @@ dialog .row > *{flex:0 0 auto}
     <div class="left">
       <div class="stage" id="stage">
         <canvas id="program" width="1280" height="720"></canvas>
-        <div class="placeholder" id="placeholder">
+        <div class="placeholder logo-bg" id="placeholder">
+          <img src="logo.png" alt="Logo Trường TH và THCS Đa Phước" class="ph-logo">
           <b>Chưa có nguồn hình</b>
           <span>Thêm nguồn ở khung bên phải: <b style="font-size:inherit">＋ Thêm webcam</b>, <b style="font-size:inherit">＋ Chia sẻ màn hình</b>,
           hoặc dùng điện thoại quét mã QR. Có thể thêm nhiều nguồn cùng lúc.</span>
@@ -283,7 +287,8 @@ dialog .row > *{flex:0 0 auto}
     <button id="vFull">⛶ Toàn màn hình</button>
   </div>
   <div class="stage" id="vStage" style="flex:1">
-    <video id="vVideo" autoplay playsinline muted></video>
+    <div class="placeholder logo-bg" id="vLogo"><img src="logo.png" alt="Logo Trường TH và THCS Đa Phước" class="ph-logo big"></div>
+    <video id="vVideo" class="hidden" autoplay playsinline muted></video>
   </div>
   <div class="vemo" id="vEmo"></div>
 </div>
@@ -291,7 +296,7 @@ dialog .row > *{flex:0 0 auto}
 <!-- ================= CỬA SỔ XUẤT HÌNH ================= -->
 <div id="outv" class="view hidden">
   <video id="oVideo" autoplay playsinline muted></video>
-  <div class="placeholder hidden" id="oMsg"><b>Chưa có hình</b><span>Cửa sổ này phải được mở từ nút “Mở cửa sổ xuất hình” trên màn hình chiếu, và màn hình chiếu phải còn mở.</span></div>
+  <div class="placeholder logo-bg hidden" id="oMsg"><img src="logo.png" alt="Logo Trường TH và THCS Đa Phước" class="ph-logo"><b>Chưa có hình</b><span>Cửa sổ này phải được mở từ nút “Mở cửa sổ xuất hình” trên màn hình chiếu, và màn hình chiếu phải còn mở.</span></div>
 </div>
 
 <script>
@@ -338,6 +343,7 @@ async function loadTurn() {
 const QUAL = { 480: { w: 854, h: 480, br: 1.2e6 }, 720: { w: 1280, h: 720, br: 2.5e6 }, 1080: { w: 1920, h: 1080, br: 4.5e6 } };
 const ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const EMOJIS = ['❤️', '👏', '🎉', '💐', '🌸', '👍', '😍', '🙏'];
+const LOGO = new Image(); LOGO.src = 'logo.png'; /* logo trường, hiện khi chưa live / tắt hình */
 const EMOJI_FONT = '"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif';
 const BANNER_DEFAULT = '💐 Tập thể Trường Tiểu học và Trung học cơ sở Đa Phước - Vĩnh Hậu tổ chức kỉ niệm 44 năm Ngày Nhà giáo Việt Nam 💐';
 
@@ -663,8 +669,15 @@ function studio() {
     g.fillStyle = '#000'; g.fillRect(0, 0, base.width, base.height);
     const cs = cells();
     if (!cs.length) {
-      g.fillStyle = '#666'; g.font = `${H / 20}px system-ui,sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
-      g.fillText('Chưa có hình', W / 2, H / 2); return;
+      /* Chưa live hoặc đã tắt hết nguồn: hiện logo trường */
+      const rg = g.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.6);
+      rg.addColorStop(0, '#1e3a6e'); rg.addColorStop(1, '#05080f');
+      g.fillStyle = rg; g.fillRect(0, 0, W, H);
+      if (LOGO.complete && LOGO.naturalWidth) {
+        const d = Math.min(W, H) * 0.72;
+        g.drawImage(LOGO, (W - d) / 2, (H - d) / 2, d, d);
+      }
+      return;
     }
     for (const [s, x, y, w, h, pip] of cs) {
       if (pip) { g.fillStyle = '#fff'; g.fillRect(x - 3, y - 3, w + 6, h + 6); }
@@ -1263,9 +1276,10 @@ function viewer(target) {
       call.on('stream', s => {
         lowLatencyReceivers(call.peerConnection);
         video.srcObject = s; video.play().catch(() => {});
+        video.classList.remove('hidden'); $('#vLogo').classList.add('hidden');
         status('ok', '● Đang xem trực tiếp phòng ' + target);
       });
-      call.on('close', () => { if (curCall === call) { curCall = null; video.srcObject = null; status('warn', 'Thầy/cô đã tắt hình, đang chờ…'); } });
+      call.on('close', () => { if (curCall === call) { curCall = null; video.srcObject = null; video.classList.add('hidden'); $('#vLogo').classList.remove('hidden'); status('warn', 'Thầy/cô đã tắt hình, đang chờ…'); } });
     });
   }
   setInterval(() => { if (curCall) lowLatencyReceivers(curCall.peerConnection); }, 2000);
