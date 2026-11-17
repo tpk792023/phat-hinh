@@ -51,6 +51,10 @@ header h1{font-size:17px;margin:0;font-weight:700}
 .stage canvas,.stage video{position:absolute;left:50%;top:50%;transform-origin:center;background:#000}
 .placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);text-align:center;padding:20px;gap:8px;background:#000}
 .placeholder b{color:var(--text);font-size:20px}
+/* Ô nhắc nhỏ ở trên, không che logo / chữ chạy / nhãn LIVE vẽ trên khung hình */
+.placeholder.hint{inset:auto;left:50%;top:14px;transform:translateX(-50%);width:max-content;max-width:min(640px,70%);
+  background:rgba(5,8,15,.78);border:1px solid var(--line);border-radius:10px;padding:8px 14px;gap:2px;font-size:13px;pointer-events:none}
+.placeholder.hint b{font-size:15px}
 .placeholder.logo-bg{background:radial-gradient(circle at center,#1e3a6e 0%,#05080f 75%)}
 .ph-logo{width:min(220px,38vh);height:auto;filter:drop-shadow(0 6px 24px rgba(0,0,0,.5))}
 .ph-logo.big{width:min(72vh,80%)}
@@ -138,8 +142,7 @@ dialog .row > *{flex:0 0 auto}
     <div class="left">
       <div class="stage" id="stage">
         <canvas id="program" width="1280" height="720"></canvas>
-        <div class="placeholder logo-bg" id="placeholder">
-          <img src="logo.png" alt="Logo Trường TH và THCS Đa Phước" class="ph-logo">
+        <div class="placeholder hint hidden" id="placeholder">
           <b>Chưa có nguồn hình</b>
           <span>Thêm nguồn ở khung bên phải: <b style="font-size:inherit">＋ Thêm webcam</b>, <b style="font-size:inherit">＋ Chia sẻ màn hình</b>,
           hoặc dùng điện thoại quét mã QR. Có thể thêm nhiều nguồn cùng lúc.</span>
@@ -164,7 +167,7 @@ dialog .row > *{flex:0 0 auto}
           <button id="bFull" title="Toàn màn hình (F)">⛶</button>
         </div>
       </div>
-      <div class="srcbar" id="srcbar"><span class="empty" id="srcEmpty">Các nguồn hình sẽ hiện ở đây. Bấm vào hình nhỏ để chọn làm hình chính.</span></div>
+      <div class="srcbar" id="srcbar"><span class="empty" id="srcEmpty"><b style="color:var(--text)">Chưa có nguồn hình.</b> Thêm ở khung bên phải: <b>＋ Thêm webcam</b>, <b>＋ Chia sẻ màn hình</b>, hoặc dùng điện thoại quét mã QR. Có thể thêm nhiều nguồn cùng lúc. Các nguồn sẽ hiện ở đây, bấm vào hình nhỏ để chọn làm hình chính.</span></div>
     </div>
     <aside>
       <div class="warnbox hidden" id="httpWarn">
@@ -584,7 +587,8 @@ function studio() {
   function refresh() {
     sources.forEach(updThumb);
     const has = sources.length > 0;
-    $('#placeholder').classList.toggle('hidden', has);
+    /* Màn chiếu luôn sạch: logo + chữ chạy + LIVE vẽ trên khung hình; lời nhắc nằm ở thanh nguồn bên dưới */
+    $('#placeholder').classList.add('hidden');
     $('#toolbar').classList.toggle('hidden', !has);
     $('#stats').classList.toggle('hidden', !has);
     $('#srcEmpty').classList.toggle('hidden', has);
