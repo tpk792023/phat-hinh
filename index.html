@@ -154,6 +154,7 @@ dialog .row > *{flex:0 0 auto}
     <span class="small">Mã phòng</span><span class="code" id="roomCode">-----</span>
     <span class="recind hidden" id="recInd">● ĐANG GHI 00:00</span>
     <span class="grow"></span>
+    <button id="m2Head" title="Phát / tắt hình ra màn hình thứ 2 (HDMI)" style="padding:4px 10px;font-size:13px">📺 Màn hình 2: TẮT</button>
     <span class="small"><span class="dot" id="netDot"></span><span id="netText">Đang kết nối máy chủ…</span></span>
     <span class="small">👀 <span id="viewerCount">0</span> máy đang xem</span>
   </header>
@@ -191,6 +192,13 @@ dialog .row > *{flex:0 0 auto}
     <aside>
       <div class="warnbox hidden" id="httpWarn">
         Trang đang mở từ máy (file://), điện thoại sẽ không vào được. Hãy mở trang từ địa chỉ web https để dùng điện thoại.
+      </div>
+      <div class="card">
+        <h3>📺 Màn hình thứ 2 (HDMI / máy chiếu)</h3>
+        <span class="small">Màn hình laptop để điều khiển, màn hình gắn HDMI chỉ hiện hình đang phát, toàn màn hình.</span>
+        <button class="primary" id="m2Btn">📺 Phát ra màn hình 2</button>
+        <label class="chk"><input type="checkbox" id="m2Black"> Tạm che màn hình 2 (màn đen) – phím <kbd>B</kbd></label>
+        <div class="small" id="m2Msg">Cắm cáp HDMI, bấm <kbd>Windows</kbd> + <kbd>P</kbd> và chọn <b>Mở rộng (Extend)</b>, rồi bấm nút trên.</div>
       </div>
       <div class="card">
         <h3>1. Thêm nguồn hình</h3>
@@ -324,6 +332,7 @@ dialog .row > *{flex:0 0 auto}
           <kbd>+ / −</kbd><span>Phóng to / thu nhỏ (hoặc lăn chuột)</span>
           <kbd>0</kbd><span>Về cỡ gốc</span>
           <kbd>S</kbd><span>Chụp ảnh lưu về máy</span>
+          <kbd>B</kbd><span>Che / mở màn hình 2 (màn đen)</span>
           <kbd>Shift + 1…8</kbd><span>Thả cảm xúc: 1 ❤️ 2 👏 3 🎉 4 💐 5 🌸 6 👍 7 😍 8 🙏</span>
         </div>
         <span class="small">Khi phóng to, kéo chuột trên hình để di chuyển.</span>
@@ -1319,7 +1328,7 @@ function studio() {
 
   const MODES = ['one', 'two', 'grid', 'pip'];
   document.addEventListener('keydown', e => {
-    if (e.target.matches('input,select,textarea') || e.ctrlKey || e.altKey || e.metaKey || $('#dlg').open) return;
+    if ((e.target.matches && e.target.matches('input,select,textarea')) || e.ctrlKey || e.altKey || e.metaKey || $('#dlg').open) return;
     const k = e.key.toLowerCase();
     /* Shift + 1…8: thả cảm xúc (dùng e.code vì Shift+1 ra kí tự "!") */
     const dm = e.shiftKey && /^(Digit|Numpad)([1-8])$/.exec(e.code);
@@ -1334,6 +1343,7 @@ function studio() {
     else if (k === '-' || k === '_') zoomBy(0.8);
     else if (k === '0') { view.zoom = 1; layout(); }
     else if (k === 's') snapshot();
+    else if (k === 'b') { $('#m2Black').checked = !$('#m2Black').checked; $('#m2Black').onchange(); }
     else return;
     wake();
   });
@@ -1453,6 +1463,47 @@ function studio() {
     if (!w) alert('Trình duyệt đang chặn cửa sổ bật lên. Bấm vào biểu tượng chặn trên thanh địa chỉ, chọn "Luôn cho phép", rồi thử lại.');
   }
   $('#bOut').onclick = openOut;
+
+  /* ---- Màn hình thứ 2 (HDMI): cửa sổ toàn màn hình chỉ có hình đang phát ---- */
+  let m2Win = null;
+  window.__phlBlack = false; /* cửa sổ màn 2 đọc biến này để che màn đen */
+  const m2Open = () => m2Win && !m2Win.closed;
+  function m2Ui() {
+    const on = m2Open();
+    $('#m2Btn').textContent = on ? '⏹ Tắt phát ra màn hình 2' : '📺 Phát ra màn hình 2';
+    $('#m2Btn').className = on ? 'danger' : 'primary';
+    $('#m2Head').textContent = '📺 Màn hình 2: ' + (on ? (window.__phlBlack ? 'ĐANG CHE' : 'ĐANG PHÁT') : 'TẮT');
+    $('#m2Head').classList.toggle('on', on);
+  }
+  setInterval(m2Ui, 1000);
+  async function m2Start() {
+    const msg = t => $('#m2Msg').innerHTML = t;
+    let target = null;
+    /* Chrome / Edge: tự tìm màn hình thứ 2 (lần đầu trình duyệt hỏi quyền "quản lý cửa sổ" – bấm Cho phép) */
+    if ('getScreenDetails' in window) {
+      try {
+        const sd = await window.getScreenDetails();
+        target = sd.screens.find(s => s !== sd.currentScreen) || null;
+        if (!target) { msg('⚠️ Chưa thấy màn hình thứ 2. Kiểm tra cáp HDMI, bấm <kbd>Windows</kbd> + <kbd>P</kbd> → chọn <b>Mở rộng (Extend)</b>, rồi bấm lại.'); return; }
+      } catch (e) { target = null; }
+    }
+    const feat = target
+      ? `popup,left=${target.availLeft},top=${target.availTop},width=${target.availWidth},height=${target.availHeight},fullscreen`
+      : 'popup,width=1280,height=760';
+    m2Win = window.open(BASE + '?xuat=1&man2=1', 'phl-man2', feat);
+    if (!m2Win) { msg('⚠️ Trình duyệt đang chặn cửa sổ bật lên. Bấm biểu tượng chặn ở cuối thanh địa chỉ → <b>Luôn cho phép</b> → bấm lại.'); return; }
+    /* Một số máy mở cửa sổ ở màn chính: đẩy sang màn 2 */
+    if (target) { try { m2Win.moveTo(target.availLeft, target.availTop); m2Win.resizeTo(target.availWidth, target.availHeight); } catch (e) {} }
+    msg(target
+      ? `✅ Đang phát ra <b>${esc(target.label || 'màn hình 2')}</b>. Nếu chưa kín màn hình: đưa chuột sang màn 2 và <b>nhấp đúp</b> vào hình.`
+      : '✅ Đã mở cửa sổ phát. <b>Kéo cửa sổ đó sang màn hình 2</b> rồi <b>nhấp đúp</b> vào hình để toàn màn hình.');
+    m2Ui();
+  }
+  function m2Stop() { if (m2Open()) m2Win.close(); m2Win = null; m2Ui(); $('#m2Msg').textContent = 'Đã tắt phát ra màn hình 2. Màn hình 2 chỉ còn hiện màn hình nền Windows.'; }
+  $('#m2Btn').onclick = $('#m2Head').onclick = () => m2Open() ? m2Stop() : m2Start();
+  $('#m2Black').onchange = () => { window.__phlBlack = $('#m2Black').checked; m2Ui(); };
+  window.addEventListener('beforeunload', () => { if (m2Open()) m2Win.close(); });
+  m2Ui();
   $('#bYt').onclick = () => dialog(`<h2>📺 Đưa lên YouTube</h2>
     <p class="small">Trình duyệt web không tự đẩy hình thẳng lên YouTube được, nên có 2 cách:</p>
     <h3>Cách 1 – Ghi hình rồi tải lên (dễ nhất)</h3>
@@ -1689,6 +1740,28 @@ function output() {
   }
   hook(); setInterval(hook, 2000);
   $('#outv').addEventListener('dblclick', () => toggleFull($('#outv')));
+  if (!params.get('man2')) return;
+
+  /* ---- Cửa sổ màn hình thứ 2: toàn màn hình, ẩn chuột, che màn đen khi màn chính yêu cầu ---- */
+  document.title = 'Màn hình 2 – Phát Hình Lớp Học';
+  const box = $('#outv');
+  const black = document.createElement('div');
+  black.style.cssText = 'position:absolute;inset:0;background:#000;display:none;z-index:5';
+  const tip = document.createElement('div');
+  tip.textContent = 'Nhấp đúp vào đây để phát toàn màn hình';
+  tip.style.cssText = 'position:absolute;left:50%;bottom:24px;transform:translateX(-50%);background:rgba(0,0,0,.75);color:#fff;padding:10px 18px;border-radius:10px;font-size:18px;z-index:6';
+  box.append(black, tip);
+  const goFull = () => { if (!isFull()) try { (box.requestFullscreen || box.webkitRequestFullscreen).call(box).catch(() => {}); } catch (e) {} };
+  goFull(); /* cửa sổ mở bằng quyền "toàn màn hình" sẽ vào luôn; không thì chờ nhấp đúp */
+  box.addEventListener('click', goFull);
+  document.addEventListener('fullscreenchange', () => tip.style.display = isFull() ? 'none' : '');
+  let idle; box.style.cursor = 'none';
+  box.addEventListener('mousemove', () => { box.style.cursor = ''; clearTimeout(idle); idle = setTimeout(() => box.style.cursor = 'none', 2000); });
+  setInterval(() => {
+    let b = false; try { b = !!(window.opener && window.opener.__phlBlack); } catch (e) {}
+    black.style.display = b ? 'block' : 'none';
+    if (isFull()) tip.style.display = 'none';
+  }, 250);
 }
 
 /* ======================================================================
