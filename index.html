@@ -198,6 +198,7 @@ dialog .row > *{flex:0 0 auto}
         <span class="small">Màn hình laptop để điều khiển, màn hình gắn HDMI chỉ hiện hình đang phát, toàn màn hình.</span>
         <button class="primary" id="m2Btn">📺 Phát ra màn hình 2</button>
         <label class="chk"><input type="checkbox" id="m2Black"> Tạm che màn hình 2 (màn đen) – phím <kbd>B</kbd></label>
+        <label class="chk"><input type="checkbox" id="fillOn" checked> Lấp đầy kín màn hình, không viền đen (cắt bớt mép nếu khác khổ) – phím <kbd>K</kbd></label>
         <div class="small" id="m2Msg">Cắm cáp HDMI, bấm <kbd>Windows</kbd> + <kbd>P</kbd> và chọn <b>Mở rộng (Extend)</b>, rồi bấm nút trên.</div>
       </div>
       <div class="card">
@@ -323,7 +324,8 @@ dialog .row > *{flex:0 0 auto}
       <div class="card">
         <h3>Phím tắt</h3>
         <div class="keys">
-          <kbd>1 … 9</kbd><span>Chọn nguồn chính</span>
+          <kbd>1 … 9</kbd><span>Chuyển ngay sang nguồn số 1 … 9</span>
+          <kbd>← →</kbd><span>Nguồn trước / nguồn sau (bút trình chiếu: PageUp / PageDown)</span>
           <kbd>L</kbd><span>Đổi kiểu chia khung</span>
           <kbd>F</kbd><span>Toàn màn hình</span>
           <kbd>Space</kbd><span>Dừng / chạy tiếp hình</span>
@@ -333,6 +335,7 @@ dialog .row > *{flex:0 0 auto}
           <kbd>0</kbd><span>Về cỡ gốc</span>
           <kbd>S</kbd><span>Chụp ảnh lưu về máy</span>
           <kbd>B</kbd><span>Che / mở màn hình 2 (màn đen)</span>
+          <kbd>K</kbd><span>Bật / tắt lấp đầy kín màn hình</span>
           <kbd>Shift + 1…8</kbd><span>Thả cảm xúc: 1 ❤️ 2 👏 3 🎉 4 💐 5 🌸 6 👍 7 😍 8 🙏</span>
         </div>
         <span class="small">Khi phóng to, kéo chuột trên hình để di chuyển.</span>
@@ -638,6 +641,13 @@ function studio() {
     if (subId === mainId) { const o = sources.find(x => x.id !== mainId); subId = o ? o.id : null; }
     refresh();
   }
+  /* Chuyển nguồn chính bằng phím: về kiểu "Một nguồn" cho gọn và báo tên nguồn */
+  function switchTo(s) {
+    if (!s) return;
+    setMain(s.id);
+    if (mode === 'grid') setMode('one');
+    toast(`▶ Đang phát nguồn ${sources.indexOf(s) + 1}: ${s.name}`);
+  }
   function setSub(id) {
     if (!get(id)) return;
     if (id === mainId) { const o = sources.find(x => x.id !== id); if (!o) return; mainId = o.id; }
@@ -758,7 +768,8 @@ function studio() {
       g.restore(); return;
     }
     const side = s.rot % 180 !== 0, ew = side ? vh : vw, eh = side ? vw : vh;
-    const f = Math.min(w / ew, h / eh);
+    /* Lấp đầy: phóng hình kín ô (cắt mép); riêng kiểu Chia đôi giữ nguyên hình cho khỏi mất nửa khung */
+    const f = window.__phlFill && mode !== 'two' ? Math.max(w / ew, h / eh) : Math.min(w / ew, h / eh);
     g.translate(x + w / 2, y + h / 2);
     g.rotate(s.rot * Math.PI / 180);
     if (s.mirror) g.scale(-1, 1);
@@ -1277,7 +1288,8 @@ function studio() {
   /* ---- Hiển thị khung hình trên màn chiếu: phóng to, kéo ---- */
   function layout() {
     const vw = canvas.width, vh = canvas.height, W = stage.clientWidth, H = stage.clientHeight;
-    const fit = Math.min(W / vw, H / vh);
+    /* Toàn màn hình + Lấp đầy: phủ kín màn hình chính, không viền đen */
+    const fit = window.__phlFill && isFull() ? Math.max(W / vw, H / vh) : Math.min(W / vw, H / vh);
     canvas.style.width = vw * fit + 'px';
     canvas.style.height = vh * fit + 'px';
     if (view.zoom <= 1) { view.px = 0; view.py = 0; }
@@ -1333,7 +1345,15 @@ function studio() {
     /* Shift + 1…8: thả cảm xúc (dùng e.code vì Shift+1 ra kí tự "!") */
     const dm = e.shiftKey && /^(Digit|Numpad)([1-8])$/.exec(e.code);
     if (dm) { e.preventDefault(); burst(EMOJIS[+dm[2] - 1]); wake(); return; }
-    if (/^[1-9]$/.test(k)) { const s = sources[+k - 1]; if (s) setMain(s.id); }
+    if (/^[1-9]$/.test(k)) { const s = sources[+k - 1]; if (s) switchTo(s); else if (sources.length) toast(`Chưa có nguồn số ${k}`); }
+    /* ← → hoặc PageUp / PageDown (bút trình chiếu): chuyển nguồn trước / sau */
+    else if (['arrowright', 'pagedown'].includes(k) || ['arrowleft', 'pageup'].includes(k)) {
+      e.preventDefault();
+      if (sources.length) {
+        const i = sources.findIndex(s => s.id === mainId), d = ['arrowright', 'pagedown'].includes(k) ? 1 : -1;
+        switchTo(sources[(i + d + sources.length) % sources.length]);
+      }
+    }
     else if (k === 'l') setMode(MODES[(MODES.indexOf(mode) + 1) % MODES.length]);
     else if (k === 'f') toggleFull(stage);
     else if (k === ' ') { e.preventDefault(); freeze(); }
@@ -1344,6 +1364,7 @@ function studio() {
     else if (k === '0') { view.zoom = 1; layout(); }
     else if (k === 's') snapshot();
     else if (k === 'b') { $('#m2Black').checked = !$('#m2Black').checked; $('#m2Black').onchange(); }
+    else if (k === 'k') { $('#fillOn').checked = !$('#fillOn').checked; $('#fillOn').onchange(); }
     else return;
     wake();
   });
@@ -1467,6 +1488,10 @@ function studio() {
   /* ---- Màn hình thứ 2 (HDMI): cửa sổ toàn màn hình chỉ có hình đang phát ---- */
   let m2Win = null;
   window.__phlBlack = false; /* cửa sổ màn 2 đọc biến này để che màn đen */
+  /* Lấp đầy kín màn hình (mặc định bật) — màn chính, màn 2 và khung hình đầu ra */
+  window.__phlFill = store('phl-fill') !== '0';
+  $('#fillOn').checked = window.__phlFill;
+  $('#fillOn').onchange = () => { window.__phlFill = $('#fillOn').checked; store('phl-fill', window.__phlFill ? '1' : '0'); layout(); toast(window.__phlFill ? 'Lấp đầy kín màn hình: BẬT' : 'Lấp đầy kín màn hình: TẮT (giữ nguyên khổ hình)'); };
   const m2Open = () => m2Win && !m2Win.closed;
   function m2Ui() {
     const on = m2Open();
@@ -1760,6 +1785,8 @@ function output() {
   setInterval(() => {
     let b = false; try { b = !!(window.opener && window.opener.__phlBlack); } catch (e) {}
     black.style.display = b ? 'block' : 'none';
+    let fill = true; try { fill = !!(window.opener && window.opener.__phlFill); } catch (e) {}
+    v.style.objectFit = fill ? 'cover' : 'contain';
     if (isFull()) tip.style.display = 'none';
   }, 250);
 }
