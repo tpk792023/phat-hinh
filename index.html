@@ -245,6 +245,18 @@ dialog .row > *{flex:0 0 auto}
         </div>
       </div>
       <div class="card">
+        <h3>☁️ Mang sang máy khác</h3>
+        <span class="small">Lưu mã phòng, dòng chữ, hình logo, nhạc nền lên mạng. Máy khác <b>quét mã</b> là có y như máy này – điện thoại và người xem không phải đổi link.</span>
+        <button class="primary" id="syncUp">☁️ Lưu cài đặt lên mạng</button>
+        <div class="small" id="syncMsg"></div>
+        <div id="syncBox" class="hidden" style="display:flex;flex-direction:column;gap:8px">
+          <div class="qr" id="qrSync"></div>
+          <div class="link" id="linkSync"></div>
+          <button id="copySync">📋 Chép đường link</button>
+          <span class="small">⚠️ Chỉ đưa mã này cho người lo kĩ thuật. Trước khi mở trên máy mới, nên <b>tắt trang này trên máy cũ</b> để giữ đúng mã phòng.</span>
+        </div>
+      </div>
+      <div class="card">
         <h3>✨ Chữ &amp; cảm xúc trên hình</h3>
         <label class="chk"><input type="checkbox" id="ovLive" checked> Hiện nhãn 🔴 LIVE (kèm số người xem)</label>
         <label class="chk"><input type="checkbox" id="ovBanner" checked> Hiện dòng chữ dưới hình</label>
@@ -402,6 +414,28 @@ const BANNER_DEFAULT = '💐 Tập thể Trường Tiểu học và Trung học 
 
 function genId(n = 5) { let s = ''; for (let i = 0; i < n; i++) s += ALPHA[Math.floor(Math.random() * ALPHA.length)]; return s; }
 function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
+/* Kho trong máy (IndexedDB): hình logo + nhạc nền */
+function idb() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open('phat-hinh', 2);
+    r.onupgradeneeded = () => {
+      const db = r.result;
+      if (!db.objectStoreNames.contains('logos')) db.createObjectStore('logos', { keyPath: 'id' });
+      if (!db.objectStoreNames.contains('music')) db.createObjectStore('music', { keyPath: 'id' });
+    };
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  });
+}
+async function idbDo(mode, fn, storeName = 'logos') {
+  const db = await idb();
+  return new Promise((res, rej) => {
+    const t = db.transaction(storeName, mode), q = fn(t.objectStore(storeName));
+    t.oncomplete = () => res(q && q.result); t.onerror = () => rej(t.error);
+  });
+}
+/* Kho trên mạng (Cloudflare Worker của thầy): mang cài đặt sang máy khác bằng mã QR */
+const KHO_URL = 'https://phat-hinh-kho.phuockhai79.workers.dev';
+const SYNC_SKIP = ['phl-key', 'phl-name', 'phl-sync', 'phl-synced'];
 function show(id) { document.querySelectorAll('.view').forEach(v => v.classList.add('hidden')); $(id).classList.remove('hidden'); }
 function setDot(dot, txtEl, state, text) { dot.className = 'dot ' + state; txtEl.textContent = text; }
 function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
@@ -733,24 +767,6 @@ function studio() {
   $('#logoAuto').onchange = e => { store('phl-logoAuto', e.target.checked ? '1' : '0'); lastAutoT = performance.now(); };
   $('#logoSec').onchange = e => store('phl-logoSec', e.target.value);
   const saveOn = () => store('phl-logoOn', JSON.stringify(logoOn));
-  function idb() {
-    return new Promise((res, rej) => {
-      const r = indexedDB.open('phat-hinh', 2);
-      r.onupgradeneeded = () => {
-        const db = r.result;
-        if (!db.objectStoreNames.contains('logos')) db.createObjectStore('logos', { keyPath: 'id' });
-        if (!db.objectStoreNames.contains('music')) db.createObjectStore('music', { keyPath: 'id' });
-      };
-      r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
-    });
-  }
-  async function idbDo(mode, fn, storeName = 'logos') {
-    const db = await idb();
-    return new Promise((res, rej) => {
-      const t = db.transaction(storeName, mode), q = fn(t.objectStore(storeName));
-      t.oncomplete = () => res(q && q.result); t.onerror = () => rej(t.error);
-    });
-  }
 
   /* ---- Nhạc nền mp3: danh sách phát, lưu trong máy, trộn vào tiếng đầu ra ---- */
   const songs = [];
@@ -1099,7 +1115,7 @@ function studio() {
     peer.on('error', err => {
       if (err.type === 'unavailable-id') {
         peer.destroy();
-        if (tries < 3) { net('warn', 'Mã phòng đang bận, chờ giây lát…'); setTimeout(() => startPeer(tries + 1), 4000); }
+        if (tries < 10) { net('warn', 'Mã phòng đang mở ở máy khác – hãy tắt trang trên máy đó, đang chờ…'); setTimeout(() => startPeer(tries + 1), 4000); }
         else { roomId = genId(); startPeer(0); }
       } else if (err.type === 'peer-unavailable') {
         /* máy xem đã thoát — bỏ qua */
@@ -1352,6 +1368,53 @@ function studio() {
   $('#bRec').onclick = toggleRec;
   window.addEventListener('beforeunload', e => { if (rec) { e.preventDefault(); e.returnValue = ''; } });
 
+  /* ---- Mang sang máy khác: lưu cài đặt + hình + nhạc lên kho mạng ---- */
+  function showSync(code) {
+    const link = BASE + '?caidat=' + code;
+    $('#linkSync').textContent = link; makeQR($('#qrSync'), link);
+    $('#syncBox').classList.remove('hidden');
+  }
+  if (store('phl-sync')) showSync(store('phl-sync'));
+  $('#copySync').onclick = e => copyText($('#linkSync').textContent, e.target);
+  $('#syncUp').onclick = async () => {
+    const btn = $('#syncUp'), msg = t => $('#syncMsg').textContent = t;
+    btn.disabled = true;
+    try {
+      const code = store('phl-sync') || genId(12);
+      let synced = []; try { synced = JSON.parse(store('phl-synced') || '[]'); } catch (e) {}
+      if (!store('phl-sync')) synced = [];
+      const settings = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith('phl-') && !SYNC_SKIP.includes(k)) settings[k] = localStorage.getItem(k);
+      }
+      settings['phl-room'] = roomId;
+      const files = [];
+      for (const st of ['logos', 'music']) {
+        const list = await idbDo('readonly', s => s.getAll(), st).catch(() => []);
+        (list || []).forEach(x => files.push({ st, id: x.id, name: x.name, t: x.t || 0, blob: x.blob }));
+      }
+      let n = 0;
+      for (const f of files) {
+        if (synced.includes(f.id)) continue;
+        n++; msg(`Đang tải lên (${n}): ${f.name}…`);
+        const r = await fetch(`${KHO_URL}/f/${code}/${f.id}`, { method: 'PUT', headers: { 'Content-Type': f.blob.type || 'application/octet-stream', 'X-T': String(f.t) }, body: f.blob });
+        if (!r.ok) throw new Error(r.status === 413 ? `"${f.name}" quá lớn (tối đa 24 MB)` : 'lỗi ' + r.status);
+        synced.push(f.id); store('phl-sync', code); store('phl-synced', JSON.stringify(synced));
+      }
+      const ids = files.map(f => f.id);
+      for (const id of synced.filter(id => !ids.includes(id))) await fetch(`${KHO_URL}/f/${code}/${id}`, { method: 'DELETE' }).catch(() => {});
+      synced = synced.filter(id => ids.includes(id));
+      const profile = { v: 1, t: Date.now(), settings, files: files.map(f => ({ st: f.st, id: f.id, name: f.name, t: f.t })) };
+      const r = await fetch(`${KHO_URL}/p/${code}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(profile) });
+      if (!r.ok) throw new Error('lỗi ' + r.status);
+      store('phl-sync', code); store('phl-synced', JSON.stringify(synced));
+      showSync(code);
+      msg(`✅ Đã lưu lúc ${new Date().toLocaleTimeString('vi-VN')} (${files.length} hình và nhạc). Thêm hay sửa gì thì bấm lưu lại.`);
+    } catch (e) { msg('❌ Chưa lưu được: ' + e.message + '. Kiểm tra Internet rồi bấm lại.'); }
+    btn.disabled = false;
+  };
+
   /* ---- Cửa sổ xuất hình & hướng dẫn YouTube ---- */
   function openOut() {
     const w = window.open(BASE + '?xuat=1', 'phl-xuat', 'width=1280,height=760');
@@ -1596,10 +1659,42 @@ function output() {
   $('#outv').addEventListener('dblclick', () => toggleFull($('#outv')));
 }
 
+/* ======================================================================
+   MÁY MỚI QUÉT MÃ CÀI ĐẶT: tải cài đặt + hình + nhạc về rồi mở trang
+   ====================================================================== */
+async function importProfile(code) {
+  document.body.innerHTML = '<div style="padding:40px 20px;font-size:18px;text-align:center;line-height:1.6"><img src="logo.png" alt="" style="width:140px;display:block;margin:0 auto 16px"><div id="impMsg">Đang tải cài đặt…</div></div>';
+  const msg = t => document.getElementById('impMsg').textContent = t;
+  try {
+    const r = await fetch(`${KHO_URL}/p/${code}`, { cache: 'no-store' });
+    if (!r.ok) throw new Error(r.status === 404 ? 'không tìm thấy cài đặt với mã này' : 'lỗi ' + r.status);
+    const p = await r.json();
+    Object.entries(p.settings || {}).forEach(([k, v]) => { if (k.startsWith('phl-') && !SYNC_SKIP.includes(k)) store(k, v); });
+    const files = p.files || [], have = {};
+    for (const st of ['logos', 'music']) have[st] = new Set(await idbDo('readonly', s => s.getAllKeys(), st).catch(() => []) || []);
+    let i = 0, fail = 0;
+    for (const f of files) {
+      i++;
+      if (have[f.st] && have[f.st].has(f.id)) continue;
+      msg(`Đang tải hình và nhạc ${i}/${files.length}: ${f.name}…`);
+      try {
+        const fr = await fetch(`${KHO_URL}/f/${code}/${f.id}`);
+        if (!fr.ok) { fail++; continue; }
+        const blob = await fr.blob();
+        await idbDo('readwrite', s => s.put({ id: f.id, name: f.name, blob, t: f.t }), f.st);
+      } catch (e) { fail++; }
+    }
+    store('phl-sync', code); store('phl-synced', JSON.stringify(files.map(f => f.id)));
+    msg(fail ? `Xong, nhưng ${fail} hình/nhạc chưa tải được. Đang mở trang…` : '✅ Xong! Đang mở trang…');
+    setTimeout(() => location.replace(BASE), fail ? 2500 : 600);
+  } catch (e) { msg('❌ Không tải được cài đặt: ' + e.message + '. Kiểm tra Internet rồi quét lại.'); }
+}
+
 /* ---- Khởi động theo đường link ---- */
 (function boot() {
   const clean = v => (v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   if (params.get('xuat')) { output(); return; }
+  if (params.get('caidat')) { importProfile(clean(params.get('caidat'))); return; }
   if (typeof Peer === 'undefined') {
     document.body.innerHTML = '<div style="padding:30px;font-size:18px">Không tải được thư viện kết nối. Kiểm tra Internet rồi tải lại trang.</div>';
     return;
