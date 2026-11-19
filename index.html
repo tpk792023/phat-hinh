@@ -27,6 +27,21 @@ button.danger{background:var(--err);border-color:var(--err);color:#fff;font-weig
 button.on{background:#1e3a8a;border-color:var(--accent)}
 select,input[type=text],textarea{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 8px;width:100%}
 textarea{font:inherit;color:inherit;resize:vertical}
+.logos{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.lg{position:relative;aspect-ratio:16/10;background:#0b1220;border:2px solid var(--line);border-radius:8px;cursor:pointer;overflow:hidden}
+.lg img{width:100%;height:100%;object-fit:contain;padding:3px}
+.lg.cur{border-color:var(--accent);box-shadow:0 0 0 2px rgba(59,130,246,.35)}
+.lg input{position:absolute;left:4px;top:4px;width:16px;height:16px;margin:0;cursor:pointer}
+.lg .x{position:absolute;right:3px;top:3px;padding:0 5px;font-size:11px;line-height:1.5;background:rgba(0,0,0,.7);border-radius:5px}
+.lg span{position:absolute;left:0;right:0;bottom:0;font-size:10px;background:rgba(0,0,0,.65);padding:1px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mlist{display:flex;flex-direction:column;gap:4px;max-height:180px;overflow:auto}
+.mi{display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:4px 6px;font-size:13px;cursor:pointer}
+.mi.cur{border-color:var(--accent);background:#132042}
+.mi .n{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mi button{padding:0 6px;font-size:11px;line-height:1.6}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.filebtn{display:block;text-align:center;background:var(--panel2);border:1px dashed #475063;border-radius:8px;padding:8px;cursor:pointer;font-size:14px}
+.filebtn:hover{border-color:var(--accent)}
 .emojis{display:flex;flex-wrap:wrap;gap:6px}
 .emojis button{font-size:22px;padding:4px 8px;line-height:1.2}
 .emojis button:active{transform:scale(1.25)}
@@ -194,6 +209,42 @@ dialog .row > *{flex:0 0 auto}
         <button id="copyCam">📋 Chép đường link</button>
       </div>
       <div class="card">
+        <h3>🖼️ Logo / hình chờ</h3>
+        <span class="small">Hiện khi chưa live hoặc khi tắt hết nguồn hình. <b>Bấm vào hình</b> để hiện ngay.</span>
+        <div class="logos" id="logoList"></div>
+        <label class="filebtn">＋ Thêm hình logo (chọn được nhiều hình)<input type="file" id="logoFile" accept="image/*" multiple hidden></label>
+        <label class="chk"><input type="checkbox" id="logoAuto"> Tự đổi qua lại các hình có dấu ✓, mỗi
+          <select id="logoSec" style="width:auto;padding:3px 6px">
+            <option value="5">5 giây</option><option value="10" selected>10 giây</option>
+            <option value="15">15 giây</option><option value="30">30 giây</option><option value="60">1 phút</option>
+          </select>
+        </label>
+        <span class="small">Hình thêm vào được máy này nhớ cho lần sau.</span>
+      </div>
+      <div class="card">
+        <h3>🎵 Nhạc nền</h3>
+        <span class="small">Phát ra loa máy này, gửi cho người xem từ xa và có trong bản ghi hình.</span>
+        <div class="mlist" id="musicList"></div>
+        <label class="filebtn">＋ Thêm nhạc mp3 (chọn được nhiều bài)<input type="file" id="musicFile" accept="audio/*,.mp3,.m4a,.wav" multiple hidden></label>
+        <div class="row">
+          <button id="mPrev" title="Bài trước">⏮</button>
+          <button id="mPlay" class="primary" style="flex:2">▶ Phát</button>
+          <button id="mNext" title="Bài sau">⏭</button>
+        </div>
+        <div class="small" id="mNow">Chưa có bài nào – bấm "Thêm nhạc mp3"</div>
+        <input type="range" id="mSeek" min="0" max="1000" value="0" title="Tua bài">
+        <label class="chk">🔊 <input type="range" id="mVol" min="0" max="100" value="70" style="flex:1"> <span id="mVolTxt" style="min-width:34px">70%</span></label>
+        <label class="chk"><input type="checkbox" id="mLoop" checked> Hết danh sách thì phát lại từ đầu</label>
+        <div class="row">
+          <span class="small" style="flex:0 0 auto">Khi bật hình</span>
+          <select id="mDuck">
+            <option value="keep">Giữ nguyên tiếng nhạc</option>
+            <option value="duck" selected>Nhỏ tiếng nhạc lại</option>
+            <option value="pause">Tạm dừng nhạc</option>
+          </select>
+        </div>
+      </div>
+      <div class="card">
         <h3>✨ Chữ &amp; cảm xúc trên hình</h3>
         <label class="chk"><input type="checkbox" id="ovLive" checked> Hiện nhãn 🔴 LIVE (kèm số người xem)</label>
         <label class="chk"><input type="checkbox" id="ovBanner" checked> Hiện dòng chữ dưới hình</label>
@@ -346,7 +397,6 @@ async function loadTurn() {
 const QUAL = { 480: { w: 854, h: 480, br: 1.2e6 }, 720: { w: 1280, h: 720, br: 2.5e6 }, 1080: { w: 1920, h: 1080, br: 4.5e6 } };
 const ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const EMOJIS = ['❤️', '👏', '🎉', '💐', '🌸', '👍', '😍', '🙏'];
-const LOGO = new Image(); LOGO.src = 'logo.png'; /* logo trường, hiện khi chưa live / tắt hình */
 const EMOJI_FONT = '"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif';
 const BANNER_DEFAULT = '💐 Tập thể Trường Tiểu học và Trung học cơ sở Đa Phước - Vĩnh Hậu tổ chức kỉ niệm 44 năm Ngày Nhà giáo Việt Nam 💐';
 
@@ -594,6 +644,7 @@ function studio() {
     $('#srcEmpty').classList.toggle('hidden', has);
     document.querySelectorAll('#toolbar [data-mode]').forEach(b => b.classList.toggle('on', b.dataset.mode === mode));
     updateAudio();
+    if (typeof musicVolume === 'function') musicVolume(); /* nhỏ / dừng nhạc khi bật hình */
   }
   document.querySelectorAll('#toolbar [data-mode]').forEach(b => b.onclick = () => setMode(b.dataset.mode));
 
@@ -668,6 +719,236 @@ function studio() {
     g.fillStyle = 'rgba(0,0,0,.6)'; g.fillRect(x + 8, y + h - fs - 18, tw + 16, fs + 10);
     g.fillStyle = '#fff'; g.fillText(s.name, x + 16, y + h - fs / 2 - 13);
   }
+  /* ---- Logo / hình chờ: nhiều hình, chọn, tự đổi, lưu trong máy (IndexedDB) ---- */
+  const LOGO_BUILTIN = [
+    { id: 'b-logo', name: 'Logo trường', src: 'logo.png' },
+    { id: 'b-pano', name: 'Pano 20/11', src: 'pano-20-11.jpg' }
+  ];
+  const logos = [];
+  let logoOn = {}; try { logoOn = JSON.parse(store('phl-logoOn') || '{}') || {}; } catch (e) {}
+  let logoCur = store('phl-logoCur') || 'b-logo';
+  let logoPrev = null, logoSwitchT = 0, lastAutoT = performance.now();
+  $('#logoAuto').checked = store('phl-logoAuto') === '1';
+  if (store('phl-logoSec')) $('#logoSec').value = store('phl-logoSec');
+  $('#logoAuto').onchange = e => { store('phl-logoAuto', e.target.checked ? '1' : '0'); lastAutoT = performance.now(); };
+  $('#logoSec').onchange = e => store('phl-logoSec', e.target.value);
+  const saveOn = () => store('phl-logoOn', JSON.stringify(logoOn));
+  function idb() {
+    return new Promise((res, rej) => {
+      const r = indexedDB.open('phat-hinh', 2);
+      r.onupgradeneeded = () => {
+        const db = r.result;
+        if (!db.objectStoreNames.contains('logos')) db.createObjectStore('logos', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('music')) db.createObjectStore('music', { keyPath: 'id' });
+      };
+      r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    });
+  }
+  async function idbDo(mode, fn, storeName = 'logos') {
+    const db = await idb();
+    return new Promise((res, rej) => {
+      const t = db.transaction(storeName, mode), q = fn(t.objectStore(storeName));
+      t.oncomplete = () => res(q && q.result); t.onerror = () => rej(t.error);
+    });
+  }
+
+  /* ---- Nhạc nền mp3: danh sách phát, lưu trong máy, trộn vào tiếng đầu ra ---- */
+  const songs = [];
+  let songCur = -1;
+  const mEl = new Audio(); mEl.preload = 'auto';
+  let mGain = null;
+  if (ac) {
+    try {
+      const srcNode = ac.createMediaElementSource(mEl);
+      mGain = ac.createGain(); mGain.gain.value = 0.7;
+      srcNode.connect(mGain); mGain.connect(dest); mGain.connect(ac.destination);
+    } catch (e) { mGain = null; }
+  }
+  if (store('phl-mVol')) $('#mVol').value = store('phl-mVol');
+  if (store('phl-mDuck')) $('#mDuck').value = store('phl-mDuck');
+  $('#mLoop').checked = store('phl-mLoop') !== '0';
+  const fmt = s => { s = Math.floor(s || 0); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+  let pausedByDuck = false;
+  function musicVolume() {
+    const v = (+$('#mVol').value) / 100;
+    $('#mVolTxt').textContent = Math.round(v * 100) + '%';
+    const live = sources.length > 0, mode = $('#mDuck').value;
+    const target = live && mode === 'duck' ? v * 0.2 : v;
+    if (mGain) mGain.gain.setTargetAtTime(target, ac.currentTime, 0.4); else mEl.volume = target;
+    /* Tạm dừng khi bật hình, phát tiếp khi tắt hình */
+    if (live && mode === 'pause' && !mEl.paused) { mEl.pause(); pausedByDuck = true; }
+    else if ((!live || mode !== 'pause') && pausedByDuck) { pausedByDuck = false; mEl.play().catch(() => {}); }
+  }
+  function renderSongs() {
+    const box = $('#musicList'); box.innerHTML = '';
+    songs.forEach((s, i) => {
+      const d = document.createElement('div');
+      d.className = 'mi' + (i === songCur ? ' cur' : '');
+      d.innerHTML = `<span>${i === songCur && !mEl.paused ? '🔊' : '🎵'}</span><span class="n"></span><button title="Xoá bài này">✕</button>`;
+      d.querySelector('.n').textContent = s.name;
+      d.onclick = () => playSong(i);
+      d.querySelector('button').onclick = async e => {
+        e.stopPropagation();
+        if (!confirm(`Xoá bài "${s.name}" khỏi danh sách?`)) return;
+        try { await idbDo('readwrite', st => st.delete(s.id), 'music'); } catch (err) {}
+        const wasCur = i === songCur;
+        songs.splice(i, 1); URL.revokeObjectURL(s.src);
+        if (wasCur) { mEl.pause(); mEl.removeAttribute('src'); songCur = -1; updNow(); }
+        else if (i < songCur) songCur--;
+        renderSongs();
+      };
+      box.appendChild(d);
+    });
+    $('#mPlay').textContent = mEl.paused ? '▶ Phát' : '⏸ Tạm dừng';
+  }
+  function updNow() {
+    const s = songs[songCur];
+    $('#mNow').textContent = s ? `${mEl.paused ? '⏸' : '▶'} ${s.name} · ${fmt(mEl.currentTime)} / ${fmt(mEl.duration)}` : (songs.length ? 'Bấm ▶ Phát hoặc bấm vào tên bài' : 'Chưa có bài nào – bấm "Thêm nhạc mp3"');
+  }
+  function playSong(i) {
+    if (!songs.length) { toast('Chưa có bài nhạc nào – bấm "＋ Thêm nhạc mp3"'); return; }
+    i = (i + songs.length) % songs.length;
+    if (ac) ac.resume();
+    if (i !== songCur) { songCur = i; mEl.src = songs[i].src; }
+    pausedByDuck = false;
+    mEl.play().catch(() => {});
+    musicVolume();
+  }
+  $('#mPlay').onclick = () => {
+    if (!mEl.paused) { mEl.pause(); pausedByDuck = false; return; }
+    playSong(songCur < 0 ? 0 : songCur);
+  };
+  $('#mPrev').onclick = () => playSong(songCur - 1);
+  $('#mNext').onclick = () => playSong(songCur + 1);
+  $('#mVol').oninput = () => { store('phl-mVol', $('#mVol').value); musicVolume(); };
+  $('#mDuck').onchange = () => { store('phl-mDuck', $('#mDuck').value); musicVolume(); };
+  $('#mLoop').onchange = () => store('phl-mLoop', $('#mLoop').checked ? '1' : '0');
+  $('#mSeek').oninput = () => { if (mEl.duration) mEl.currentTime = mEl.duration * $('#mSeek').value / 1000; };
+  mEl.addEventListener('timeupdate', () => { if (mEl.duration) $('#mSeek').value = Math.round(mEl.currentTime / mEl.duration * 1000); updNow(); });
+  ['play', 'pause'].forEach(ev => mEl.addEventListener(ev, () => { renderSongs(); updNow(); }));
+  mEl.addEventListener('ended', () => {
+    if (songCur < songs.length - 1) playSong(songCur + 1);
+    else if ($('#mLoop').checked) playSong(0);
+  });
+  $('#musicFile').onchange = async e => {
+    const files = [...e.target.files];
+    e.target.value = '';
+    let saved = true;
+    for (const f of files) {
+      const id = 'm-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      const name = f.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim().slice(0, 80);
+      try { await idbDo('readwrite', st => st.put({ id, name, blob: f, t: Date.now() }), 'music'); } catch (err) { saved = false; }
+      songs.push({ id, name, src: URL.createObjectURL(f) });
+    }
+    renderSongs(); updNow();
+    if (files.length) toast(saved ? `Đã thêm ${files.length} bài nhạc` : `Đã thêm ${files.length} bài (chỉ dùng trong lần mở này – máy không cho lưu)`);
+  };
+  idbDo('readonly', st => st.getAll(), 'music').then(list => {
+    (list || []).sort((a, b) => (a.t || 0) - (b.t || 0)).forEach(x => songs.push({ id: x.id, name: x.name, src: URL.createObjectURL(x.blob) }));
+    renderSongs(); updNow();
+  }).catch(() => {});
+  musicVolume();
+  function addLogo(o) {
+    const l = { ...o, img: new Image() };
+    l.img.src = l.src;
+    if (!(l.id in logoOn)) logoOn[l.id] = true;
+    logos.push(l);
+    return l;
+  }
+  function setLogo(id) {
+    if (id !== logoCur) { logoPrev = logoCur; logoSwitchT = performance.now(); }
+    logoCur = id; store('phl-logoCur', id);
+    lastAutoT = performance.now();
+    renderLogos();
+  }
+  function renderLogos() {
+    const box = $('#logoList'); box.innerHTML = '';
+    logos.forEach(l => {
+      const d = document.createElement('div');
+      d.className = 'lg' + (l.id === logoCur ? ' cur' : '');
+      d.title = l.name + ' – bấm để hiện';
+      d.innerHTML = `<img alt=""><input type="checkbox" title="Đưa vào vòng tự đổi">${l.builtin ? '' : '<button class="x" title="Xoá hình này">✕</button>'}<span></span>`;
+      d.querySelector('img').src = l.src;
+      d.querySelector('span').textContent = l.name;
+      const cb = d.querySelector('input');
+      cb.checked = !!logoOn[l.id];
+      cb.onclick = e => { e.stopPropagation(); logoOn[l.id] = cb.checked; saveOn(); };
+      const x = d.querySelector('.x');
+      if (x) x.onclick = async e => {
+        e.stopPropagation();
+        if (!confirm(`Xoá hình "${l.name}"?`)) return;
+        try { await idbDo('readwrite', s => s.delete(l.id)); } catch (err) {}
+        logos.splice(logos.indexOf(l), 1); delete logoOn[l.id]; saveOn();
+        if (l.src.startsWith('blob:')) URL.revokeObjectURL(l.src);
+        if (logoCur === l.id) setLogo(logos[0].id); else renderLogos();
+      };
+      d.onclick = () => setLogo(l.id);
+      box.appendChild(d);
+    });
+  }
+  /* Thu nhỏ hình quá lớn cho nhẹ máy */
+  async function shrink(file) {
+    try {
+      const bmp = await createImageBitmap(file);
+      const k = Math.min(1, 1920 / Math.max(bmp.width, bmp.height));
+      if (k === 1 && file.size < 3e6) return file;
+      const c = document.createElement('canvas');
+      c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+      c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+      const type = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+      return await new Promise(r => c.toBlob(r, type, 0.9));
+    } catch (e) { return file; }
+  }
+  $('#logoFile').onchange = async e => {
+    const files = [...e.target.files].filter(f => f.type.startsWith('image/'));
+    e.target.value = '';
+    let last = null, saved = true;
+    for (const f of files) {
+      const blob = await shrink(f);
+      const id = 'u-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      const name = f.name.replace(/\.[^.]+$/, '').slice(0, 40);
+      try { await idbDo('readwrite', s => s.put({ id, name, blob, t: Date.now() })); } catch (err) { saved = false; }
+      last = addLogo({ id, name, src: URL.createObjectURL(blob) });
+    }
+    saveOn();
+    if (last) { setLogo(last.id); toast(saved ? `Đã thêm ${files.length} hình` : `Đã thêm ${files.length} hình (chỉ dùng trong lần mở này – máy không cho lưu)`); }
+  };
+  LOGO_BUILTIN.forEach(o => addLogo({ ...o, builtin: true }));
+  renderLogos();
+  idbDo('readonly', s => s.getAll()).then(list => {
+    (list || []).sort((a, b) => (a.t || 0) - (b.t || 0)).forEach(x => addLogo({ id: x.id, name: x.name, src: URL.createObjectURL(x.blob) }));
+    if (!logos.some(l => l.id === logoCur)) logoCur = logos[0].id;
+    renderLogos();
+  }).catch(() => {});
+
+  function drawOneLogo(l, alpha, W, H) {
+    const im = l && l.img;
+    if (!im || !im.complete || !im.naturalWidth) return;
+    const bw = W * 0.9, bh = H * 0.76;
+    const f = Math.min(bw / im.naturalWidth, bh / im.naturalHeight);
+    const w = im.naturalWidth * f, h = im.naturalHeight * f;
+    g.save(); g.globalAlpha = alpha;
+    g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowBlur = H * 0.03; g.shadowOffsetY = H * 0.01;
+    g.drawImage(im, (W - w) / 2, (H - h) / 2, w, h);
+    g.restore();
+  }
+  function drawLogos(W, H) {
+    const now = performance.now();
+    /* Tự đổi hình theo thời gian đã chọn */
+    if ($('#logoAuto').checked) {
+      const list = logos.filter(l => logoOn[l.id]);
+      if (list.length > 1 && now - lastAutoT > (+$('#logoSec').value || 10) * 1000) {
+        const i = list.findIndex(l => l.id === logoCur);
+        setLogo(list[(i + 1) % list.length].id);
+      }
+    }
+    const cur = logos.find(l => l.id === logoCur) || logos[0];
+    const prev = logos.find(l => l.id === logoPrev);
+    const k = Math.min(1, (now - logoSwitchT) / 700); /* chuyển mờ dần 0,7 giây */
+    if (prev && k < 1) { drawOneLogo(prev, 1 - k, W, H); drawOneLogo(cur, k, W, H); }
+    else drawOneLogo(cur, 1, W, H);
+  }
+
   function drawBase() {
     const W = canvas.width, H = canvas.height - bannerH();
     g.fillStyle = '#000'; g.fillRect(0, 0, base.width, base.height);
@@ -677,10 +958,7 @@ function studio() {
       const rg = g.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.6);
       rg.addColorStop(0, '#1e3a6e'); rg.addColorStop(1, '#05080f');
       g.fillStyle = rg; g.fillRect(0, 0, W, H);
-      if (LOGO.complete && LOGO.naturalWidth) {
-        const d = Math.min(W, H) * 0.72;
-        g.drawImage(LOGO, (W - d) / 2, (H - d) / 2, d, d);
-      }
+      drawLogos(W, H);
       return;
     }
     for (const [s, x, y, w, h, pip] of cs) {
