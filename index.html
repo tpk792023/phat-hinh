@@ -42,6 +42,10 @@ textarea{font:inherit;color:inherit;resize:vertical}
 input[type=range]{width:100%;accent-color:var(--accent)}
 .filebtn{display:block;text-align:center;background:var(--panel2);border:1px dashed #475063;border-radius:8px;padding:8px;cursor:pointer;font-size:14px}
 .filebtn:hover{border-color:var(--accent)}
+.author{font-size:12px;color:var(--muted);text-align:center;padding:6px 8px;line-height:1.5}
+.swatches{display:flex;gap:5px;flex-wrap:wrap}
+.swatches button{width:24px;height:24px;padding:0;border-radius:50%;border:2px solid var(--line)}
+.swatches button.on{border-color:#fff;box-shadow:0 0 0 2px var(--accent)}
 .emojis{display:flex;flex-wrap:wrap;gap:6px}
 .emojis button{font-size:22px;padding:4px 8px;line-height:1.2}
 .emojis button:active{transform:scale(1.25)}
@@ -274,6 +278,11 @@ dialog .row > *{flex:0 0 auto}
             <option value="purple">Tím</option>
           </select>
         </div>
+        <div class="row" style="flex-wrap:wrap">
+          <span class="small" style="flex:0 0 auto">Màu chữ chạy</span>
+          <span class="swatches" id="txtSwatches" style="flex:1"></span>
+          <input type="color" id="ovTextColor" value="#ffffff" title="Chọn màu tuỳ ý" style="flex:0 0 38px;height:30px;padding:0;border:1px solid var(--line);border-radius:6px;background:none">
+        </div>
         <h4>Thả cảm xúc bay lên hình</h4>
         <div class="emojis" id="ovEmojis"></div>
         <span class="small">Người xem từ xa cũng bấm thả cảm xúc được. Chữ và cảm xúc có trong bản ghi hình và trên YouTube.</span>
@@ -315,9 +324,11 @@ dialog .row > *{flex:0 0 auto}
           <kbd>+ / −</kbd><span>Phóng to / thu nhỏ (hoặc lăn chuột)</span>
           <kbd>0</kbd><span>Về cỡ gốc</span>
           <kbd>S</kbd><span>Chụp ảnh lưu về máy</span>
+          <kbd>Shift + 1…8</kbd><span>Thả cảm xúc: 1 ❤️ 2 👏 3 🎉 4 💐 5 🌸 6 👍 7 😍 8 🙏</span>
         </div>
         <span class="small">Khi phóng to, kéo chuột trên hình để di chuyển.</span>
       </div>
+      <div class="author">Tác giả: Thầy Tống Phước Khải – GV Trường TH&amp;THCS Đa Phước – Vĩnh Hậu – An Giang</div>
     </aside>
   </div>
 </div>
@@ -342,6 +353,7 @@ dialog .row > *{flex:0 0 auto}
     <label class="chk"><input type="checkbox" id="camMic"> Phát kèm tiếng (micro)</label>
     <button class="primary" id="camGo">▶ Bắt đầu phát</button>
     <span class="small">Giữ màn hình điện thoại sáng và không chuyển sang ứng dụng khác khi đang phát.</span>
+    <div class="author">Tác giả: Thầy Tống Phước Khải – GV Trường TH&amp;THCS Đa Phước – Vĩnh Hậu – An Giang</div>
   </div>
 </div>
 
@@ -357,6 +369,7 @@ dialog .row > *{flex:0 0 auto}
     <video id="vVideo" class="hidden" autoplay playsinline muted></video>
   </div>
   <div class="vemo" id="vEmo"></div>
+  <div class="author" style="background:var(--panel)">Tác giả: Thầy Tống Phước Khải – GV Trường TH&amp;THCS Đa Phước – Vĩnh Hậu – An Giang</div>
 </div>
 
 <!-- ================= CỬA SỔ XUẤT HÌNH ================= -->
@@ -1009,6 +1022,19 @@ function studio() {
   $('#ovText').oninput = e => { ov.text = e.target.value.replace(/\s+/g, ' ').trim(); store('phl-ovText', e.target.value); };
   $('#ovStyle').onchange = e => { ov.style = e.target.value; store('phl-ovStyle', ov.style); };
   $('#ovColor').onchange = e => { ov.color = e.target.value; store('phl-ovColor', ov.color); };
+  /* Màu chữ chạy: màu có sẵn + chọn tuỳ ý */
+  const TXT_COLORS = [['#ffffff', 'Trắng'], ['#fde047', 'Vàng'], ['#fbbf24', 'Vàng kim'], ['#fef3c7', 'Kem'], ['#a5f3fc', 'Xanh nhạt'], ['#fecaca', 'Hồng nhạt'], ['#111827', 'Đen']];
+  ov.textColor = store('phl-ovTextColor') || '#ffffff';
+  function setTextColor(c) {
+    ov.textColor = c; store('phl-ovTextColor', c); $('#ovTextColor').value = c;
+    document.querySelectorAll('#txtSwatches button').forEach(b => b.classList.toggle('on', b.dataset.c.toLowerCase() === c.toLowerCase()));
+  }
+  TXT_COLORS.forEach(([c, name]) => {
+    const b = document.createElement('button'); b.dataset.c = c; b.title = name; b.style.background = c;
+    b.onclick = () => setTextColor(c); $('#txtSwatches').appendChild(b);
+  });
+  $('#ovTextColor').oninput = e => setTextColor(e.target.value);
+  setTextColor(ov.textColor);
   function bannerH() { return ov.banner && ov.text ? Math.round(canvas.height * 0.1) : 0; }
   const FONT = '"Be Vietnam Pro",system-ui,sans-serif';
   if (document.fonts && document.fonts.load) document.fonts.load(`800 40px "Be Vietnam Pro"`).catch(() => {});
@@ -1028,8 +1054,10 @@ function studio() {
       let tw = pg.measureText(ov.text).width;
       const pad = W * 0.025;
       const scroll = ov.style === 'scroll' || (ov.style === 'auto' && tw > W - pad * 2);
-      pg.textBaseline = 'middle'; pg.fillStyle = '#fff';
-      pg.shadowColor = 'rgba(0,0,0,.55)'; pg.shadowBlur = fs * 0.15; pg.shadowOffsetY = fs * 0.05;
+      pg.textBaseline = 'middle'; pg.fillStyle = ov.textColor || '#fff';
+      /* chữ tối thì đổ bóng sáng, chữ sáng thì đổ bóng tối – luôn dễ đọc */
+      const hx = (ov.textColor || '#ffffff').replace('#', ''), lum = (parseInt(hx.slice(0, 2), 16) * 299 + parseInt(hx.slice(2, 4), 16) * 587 + parseInt(hx.slice(4, 6), 16) * 114) / 1000;
+      pg.shadowColor = lum < 110 ? 'rgba(255,255,255,.6)' : 'rgba(0,0,0,.55)'; pg.shadowBlur = fs * 0.15; pg.shadowOffsetY = fs * 0.05;
       const ty = y + bh * 0.54;
       pg.beginPath(); pg.rect(0, y, W, bh); pg.clip();
       if (scroll) {
@@ -1094,7 +1122,11 @@ function studio() {
     });
   }
   const emoBox = $('#ovEmojis');
-  EMOJIS.forEach(e => { const b = document.createElement('button'); b.textContent = e; b.onclick = () => { for (let i = 0; i < 3; i++) setTimeout(() => spawnEmoji(e), i * 120); }; emoBox.appendChild(b); });
+  function burst(e) { for (let i = 0; i < 3; i++) setTimeout(() => spawnEmoji(e), i * 120); }
+  EMOJIS.forEach((e, i) => {
+    const b = document.createElement('button'); b.textContent = e; b.title = `Phím tắt: Shift + ${i + 1}`;
+    b.onclick = () => burst(e); emoBox.appendChild(b);
+  });
   /* Dùng bộ đếm trong Worker để vẫn vẽ đều khi cửa sổ bị che / thu nhỏ */
   try {
     const tick = new Worker(URL.createObjectURL(new Blob(['setInterval(()=>postMessage(0),33)'], { type: 'text/javascript' })));
@@ -1292,6 +1324,9 @@ function studio() {
   document.addEventListener('keydown', e => {
     if (e.target.matches('input,select,textarea') || e.ctrlKey || e.altKey || e.metaKey || $('#dlg').open) return;
     const k = e.key.toLowerCase();
+    /* Shift + 1…8: thả cảm xúc (dùng e.code vì Shift+1 ra kí tự "!") */
+    const dm = e.shiftKey && /^(Digit|Numpad)([1-8])$/.exec(e.code);
+    if (dm) { e.preventDefault(); burst(EMOJIS[+dm[2] - 1]); wake(); return; }
     if (/^[1-9]$/.test(k)) { const s = sources[+k - 1]; if (s) setMain(s.id); }
     else if (k === 'l') setMode(MODES[(MODES.indexOf(mode) + 1) % MODES.length]);
     else if (k === 'f') toggleFull(stage);
