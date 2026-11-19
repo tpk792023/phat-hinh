@@ -215,6 +215,11 @@ dialog .row > *{flex:0 0 auto}
         </div>
         <h4>🖥️ Màn hình / cửa sổ / slide</h4>
         <button id="scrAdd">＋ Chia sẻ màn hình</button>
+        <h4>🚁 Flycam (DJI…)</h4>
+        <div class="row">
+          <button id="flyAdd" style="flex:2">＋ Thêm Flycam</button>
+          <button id="flyHelp" title="Cách đưa hình flycam lên máy tính">❓ Cách nối</button>
+        </div>
         <h4>📱 Điện thoại, máy tính bảng, laptop khác</h4>
         <span class="small">Mỗi máy quét mã này rồi bấm <b>Bắt đầu phát</b> là thành một nguồn mới:</span>
         <div class="qr" id="qrCam"></div>
@@ -687,7 +692,7 @@ function studio() {
     if (!s.thumb) return;
     const i = sources.indexOf(s);
     s.thumb.querySelector('.num').textContent = i + 1;
-    s.thumb.querySelector('.tname').textContent = (s.kind === 'usb' ? '🎥 ' : s.kind === 'screen' ? '🖥️ ' : '📱 ') + s.name;
+    s.thumb.querySelector('.tname').textContent = (s.kind === 'usb' ? '🎥 ' : s.kind === 'screen' ? (/^Flycam/.test(s.name) ? '🚁 ' : '🖥️ ') : '📱 ') + s.name;
     s.thumb.querySelector('.tstat').textContent = s.status || s.statText || (s.el.videoWidth ? `${s.el.videoWidth}×${s.el.videoHeight}` : 'Đang chờ hình…');
     s.thumb.querySelector('.tstat').title = s.thumb.querySelector('.tstat').textContent;
     const isMain = s.id === mainId, isSub = s.id === subId && (mode === 'two' || mode === 'pip') && sources.length > 1;
@@ -1274,15 +1279,44 @@ function studio() {
   listDevices();
 
   /* ---- Chia sẻ màn hình ---- */
-  $('#scrAdd').onclick = async () => {
+  async function addScreenSrc(name, hint) {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) { alert('Trình duyệt này không chia sẻ màn hình được. Hãy dùng Chrome hoặc Edge trên máy tính.'); return; }
     try {
       const st = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30 } }, audio: true });
       const t = st.getVideoTracks()[0];
-      try { t.contentHint = 'detail'; } catch (e) {}
-      const s = addSource({ kind: 'screen', name: 'Màn hình', stream: st });
-      t.onended = () => removeSource(s, 'Đã dừng chia sẻ màn hình');
+      try { t.contentHint = hint || 'detail'; } catch (e) {}
+      const s = addSource({ kind: 'screen', name, stream: st });
+      t.onended = () => removeSource(s, `Đã dừng "${s.name}"`);
     } catch (e) { /* thầy/cô bấm Huỷ */ }
+  }
+  $('#scrAdd').onclick = () => addScreenSrc('Màn hình');
+
+  /* ---- Flycam: lấy hình từ cửa sổ chiếu màn hình điện thoại hoặc thẻ ghi hình HDMI ---- */
+  const FLY_HELP = `<h2>🚁 Đưa hình Flycam lên trang</h2>
+    <p class="small">Hình flycam chỉ hiện trong ứng dụng của hãng (DJI Fly…) trên điện thoại / tay điều khiển, nên phải đưa lên máy tính trước. Chọn 1 trong 3 cách:</p>
+    <h3>Cách 1 – Điện thoại Android, cắm cáp USB (miễn phí, nhanh nhất)</h3>
+    <ol>
+      <li>Trên máy tính tải <b>scrcpy</b> (github.com/Genymobile/scrcpy), giải nén.</li>
+      <li>Điện thoại: bật <b>Tuỳ chọn nhà phát triển → Gỡ lỗi USB</b>, cắm cáp vào máy tính, mở <b>scrcpy.exe</b> → màn hình điện thoại hiện trong một cửa sổ.</li>
+      <li>Mở ứng dụng <b>DJI Fly</b> trên điện thoại, xoay ngang.</li>
+      <li>Trên trang này bấm <b>＋ Thêm Flycam</b> → chọn thẻ <b>Cửa sổ</b> → chọn cửa sổ điện thoại → <b>Chia sẻ</b>.</li>
+    </ol>
+    <h3>Cách 2 – iPhone (qua Wi-Fi)</h3>
+    <ol>
+      <li>Cài phần mềm nhận AirPlay miễn phí trên máy tính (ví dụ <b>LetsView</b>), iPhone và máy tính chung Wi-Fi.</li>
+      <li>iPhone: kéo Trung tâm điều khiển → <b>Phản chiếu màn hình</b> → chọn máy tính.</li>
+      <li>Trên trang này bấm <b>＋ Thêm Flycam</b> → chọn cửa sổ đó → <b>Chia sẻ</b>.</li>
+    </ol>
+    <h3>Cách 3 – Tay điều khiển có cổng HDMI + thẻ ghi hình (hình đẹp, ổn định nhất)</h3>
+    <ol>
+      <li>Cắm HDMI từ tay điều khiển (hoặc điện thoại qua cáp chuyển HDMI) vào <b>thẻ ghi hình USB (capture card)</b>, cắm thẻ vào máy tính.</li>
+      <li>Thẻ hiện như một webcam: ở mục <b>🎥 Webcam USB</b> chọn tên thẻ (thường là "USB Video") → <b>＋ Thêm webcam</b>.</li>
+    </ol>
+    <p class="small">Mẹo: trong DJI Fly có thể ẩn bớt nút trên màn hình; bật <b>Lấp đầy</b> (phím K) để cắt bớt mép. Nguồn Flycam chuyển qua lại bằng phím số như các nguồn khác.</p>`;
+  $('#flyHelp').onclick = () => dialog(FLY_HELP, [{ text: 'Đóng' }, { text: '＋ Thêm Flycam', cls: 'primary', fn: () => addScreenSrc('Flycam', 'motion') }]);
+  $('#flyAdd').onclick = () => {
+    if (store('phl-flyHelped')) addScreenSrc('Flycam', 'motion');
+    else { store('phl-flyHelped', '1'); $('#flyHelp').onclick(); }
   };
 
   /* ---- Hiển thị khung hình trên màn chiếu: phóng to, kéo ---- */
