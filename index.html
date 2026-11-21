@@ -269,6 +269,7 @@ dialog .row > *{flex:0 0 auto}
         <h3>☁️ Mang sang máy khác</h3>
         <span class="small">Lưu mã phòng, dòng chữ, hình logo, nhạc nền lên mạng. Máy khác <b>quét mã</b> là có y như máy này – điện thoại và người xem không phải đổi link.</span>
         <button class="primary" id="syncUp">☁️ Lưu cài đặt lên mạng</button>
+        <div class="row"><button id="pinChange">🔒 Đổi mã PIN</button><button id="pinLock">🔒 Khoá máy này</button></div>
         <div class="small" id="syncMsg"></div>
         <div id="syncBox" class="hidden" style="display:flex;flex-direction:column;gap:8px">
           <div class="qr" id="qrSync"></div>
@@ -468,7 +469,7 @@ async function idbDo(mode, fn, storeName = 'logos') {
 }
 /* Kho trên mạng (Cloudflare Worker của thầy): mang cài đặt sang máy khác bằng mã QR */
 const KHO_URL = 'https://phat-hinh-kho.phuockhai79.workers.dev';
-const SYNC_SKIP = ['phl-key', 'phl-name', 'phl-sync', 'phl-synced'];
+const SYNC_SKIP = ['phl-key', 'phl-name', 'phl-sync', 'phl-synced', 'phl-pin'];
 function show(id) { document.querySelectorAll('.view').forEach(v => v.classList.add('hidden')); $(id).classList.remove('hidden'); }
 function setDot(dot, txtEl, state, text) { dot.className = 'dot ' + state; txtEl.textContent = text; }
 function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
@@ -1642,6 +1643,12 @@ function studio() {
   }
   if (store('phl-sync')) showSync(store('phl-sync'));
   $('#copySync').onclick = e => copyText($('#linkSync').textContent, e.target);
+  $('#pinChange').onclick = pinChange;
+  $('#pinLock').onclick = () => {
+    if (!confirm('Khoá máy này? Lần sau mở trang phải nhập lại mã PIN.')) return;
+    try { localStorage.removeItem('phl-pin'); } catch (e) {}
+    location.reload();
+  };
   $('#syncUp').onclick = async () => {
     const btn = $('#syncUp'), msg = t => $('#syncMsg').textContent = t;
     btn.disabled = true;
@@ -1664,16 +1671,16 @@ function studio() {
       for (const f of files) {
         if (synced.includes(f.id)) continue;
         n++; msg(`Đang tải lên (${n}): ${f.name}…`);
-        const r = await fetch(`${KHO_URL}/f/${code}/${f.id}`, { method: 'PUT', headers: { 'Content-Type': f.blob.type || 'application/octet-stream', 'X-T': String(f.t) }, body: f.blob });
-        if (!r.ok) throw new Error(r.status === 413 ? `"${f.name}" quá lớn (tối đa 24 MB)` : 'lỗi ' + r.status);
+        const r = await fetch(`${KHO_URL}/f/${code}/${f.id}`, { method: 'PUT', headers: { 'Content-Type': f.blob.type || 'application/octet-stream', 'X-T': String(f.t), 'X-Pin': store('phl-pin') || '' }, body: f.blob });
+        if (!r.ok) throw new Error(r.status === 413 ? `"${f.name}" quá lớn (tối đa 24 MB)` : (r.status === 403 ? 'sai mã PIN (bấm 🔒 Khoá máy này rồi nhập lại PIN)' : 'lỗi ' + r.status));
         synced.push(f.id); store('phl-sync', code); store('phl-synced', JSON.stringify(synced));
       }
       const ids = files.map(f => f.id);
-      for (const id of synced.filter(id => !ids.includes(id))) await fetch(`${KHO_URL}/f/${code}/${id}`, { method: 'DELETE' }).catch(() => {});
+      for (const id of synced.filter(id => !ids.includes(id))) await fetch(`${KHO_URL}/f/${code}/${id}`, { method: 'DELETE', headers: { 'X-Pin': store('phl-pin') || '' } }).catch(() => {});
       synced = synced.filter(id => ids.includes(id));
       const profile = { v: 1, t: Date.now(), settings, files: files.map(f => ({ st: f.st, id: f.id, name: f.name, t: f.t })) };
-      const r = await fetch(`${KHO_URL}/p/${code}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(profile) });
-      if (!r.ok) throw new Error('lỗi ' + r.status);
+      const r = await fetch(`${KHO_URL}/p/${code}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Pin': store('phl-pin') || '' }, body: JSON.stringify(profile) });
+      if (!r.ok) throw new Error((r.status === 403 ? 'sai mã PIN (bấm 🔒 Khoá máy này rồi nhập lại PIN)' : 'lỗi ' + r.status));
       store('phl-sync', code); store('phl-synced', JSON.stringify(synced));
       showSync(code);
       msg(`✅ Đã lưu lúc ${new Date().toLocaleTimeString('vi-VN')} (${files.length} hình và nhạc). Thêm hay sửa gì thì bấm lưu lại.`);
@@ -1995,6 +2002,88 @@ function output() {
 }
 
 /* ======================================================================
+   KHOÁ MÀN HÌNH ĐIỀU KHIỂN BẰNG MÃ PIN (người xem / điện thoại phát không cần)
+   PIN lưu dạng mã hoá trong kho Cloudflare của thầy, máy đã mở khoá thì nhớ.
+   ====================================================================== */
+async function pinApi(path, body) {
+  const r = await fetch(KHO_URL + '/pin/' + path, body
+    ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+    : { cache: 'no-store' });
+  return r.json();
+}
+/* Hiện ô nhập PIN; validate(p1, p2) trả về '' khi đúng, hoặc câu báo lỗi. Trả về false nếu bấm Huỷ */
+function pinScreen(title, sub, two, validate, cancelable) {
+  return new Promise(resolve => {
+    const d = document.createElement('div');
+    d.style.cssText = 'position:fixed;inset:0;z-index:100;background:radial-gradient(circle at center,#1e3a6e 0%,#05080f 75%);display:flex;align-items:center;justify-content:center;padding:16px';
+    const inp = (id, ph) => `<input id="${id}" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="${ph}" style="text-align:center;font-size:22px;letter-spacing:6px;padding:10px">`;
+    d.innerHTML = `<form style="background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;width:min(380px,100%);display:flex;flex-direction:column;gap:10px;text-align:center">
+      <img src="logo.png" alt="" style="width:110px;margin:0 auto">
+      <h2 style="margin:4px 0 0;font-size:19px">${title}</h2>
+      <div class="small">${sub}</div>
+      ${inp('pinA', 'Mã PIN (4–8 chữ số)')}${two ? inp('pinB', 'Nhập lại mã PIN') : ''}
+      <div id="pinErr" style="color:#fca5a5;min-height:18px;font-size:14px"></div>
+      <button class="primary" type="submit" style="padding:11px">${two ? 'Lưu mã PIN' : 'Mở khoá'}</button>
+      ${cancelable ? '<button type="button" id="pinCancel">Huỷ</button>' : ''}
+    </form>`;
+    document.body.appendChild(d);
+    const a = d.querySelector('#pinA'), b = d.querySelector('#pinB'), err = d.querySelector('#pinErr'), btn = d.querySelector('[type=submit]');
+    a.focus();
+    if (cancelable) d.querySelector('#pinCancel').onclick = () => { d.remove(); resolve(false); };
+    d.querySelector('form').onsubmit = async e => {
+      e.preventDefault();
+      btn.disabled = true; err.textContent = 'Đang kiểm tra…';
+      let m = '';
+      try { m = await validate(a.value.trim(), b ? b.value.trim() : ''); } catch (x) { m = 'Không kết nối được, kiểm tra Internet rồi thử lại'; }
+      btn.disabled = false; err.textContent = m;
+      if (!m) { d.remove(); resolve(true); } else { a.value = ''; if (b) b.value = ''; a.focus(); }
+    };
+  });
+}
+const pinRule = (a, b, two) => !/^\d{4,8}$/.test(a) ? 'Mã PIN phải gồm 4 đến 8 chữ số' : two && a !== b ? 'Hai lần nhập không giống nhau' : '';
+async function pinGate() {
+  let st = null;
+  try { st = await pinApi('status'); } catch (e) {}
+  if (!st) {
+    if (store('phl-pin')) return true; /* mất mạng: máy đã mở khoá trước đó vẫn dùng được */
+    await pinScreen('Không kết nối được máy chủ', 'Kiểm tra Internet rồi tải lại trang.', false, async () => 'Chưa có Internet – tải lại trang khi có mạng');
+    return false;
+  }
+  if (!st.set) {
+    await pinScreen('🔒 Tạo mã PIN', 'Đặt mã PIN để người khác có link cũng <b>không mở được màn hình điều khiển</b>. Người xem và điện thoại phát hình vẫn vào bình thường, không cần PIN.', true, async (a, b) => {
+      const m = pinRule(a, b, true); if (m) return m;
+      const r = await pinApi('set', { pin: a });
+      if (!r.ok) return r.err || 'Không lưu được mã PIN';
+      store('phl-pin', a); return '';
+    });
+    return true;
+  }
+  const saved = store('phl-pin');
+  if (saved) { try { if ((await pinApi('check', { pin: saved })).ok) return true; } catch (e) { return true; } }
+  await pinScreen('🔒 Nhập mã PIN', 'Màn hình điều khiển đã được khoá bằng mã PIN.', false, async a => {
+    if (!a) return 'Hãy nhập mã PIN';
+    if (!(await pinApi('check', { pin: a })).ok) return 'Mã PIN không đúng';
+    store('phl-pin', a); return '';
+  });
+  return true;
+}
+async function pinChange() {
+  let old = '';
+  const ok = await pinScreen('🔒 Đổi mã PIN', 'Bước 1: nhập mã PIN hiện tại.', false, async a => {
+    if (!(await pinApi('check', { pin: a })).ok) return 'Mã PIN không đúng';
+    old = a; return '';
+  }, true);
+  if (!ok) return;
+  const ok2 = await pinScreen('🔒 Mã PIN mới', 'Bước 2: nhập mã PIN mới hai lần.', true, async (a, b) => {
+    const m = pinRule(a, b, true); if (m) return m;
+    const r = await pinApi('set', { pin: a, old });
+    if (!r.ok) return r.err || 'Không đổi được';
+    store('phl-pin', a); return '';
+  }, true);
+  if (ok2) toast('✅ Đã đổi mã PIN. Các máy khác sẽ phải nhập PIN mới.');
+}
+
+/* ======================================================================
    MÁY MỚI QUÉT MÃ CÀI ĐẶT: tải cài đặt + hình + nhạc về rồi mở trang
    ====================================================================== */
 async function importProfile(code) {
@@ -2002,7 +2091,7 @@ async function importProfile(code) {
   const msg = t => document.getElementById('impMsg').textContent = t;
   try {
     const r = await fetch(`${KHO_URL}/p/${code}`, { cache: 'no-store' });
-    if (!r.ok) throw new Error(r.status === 404 ? 'không tìm thấy cài đặt với mã này' : 'lỗi ' + r.status);
+    if (!r.ok) throw new Error(r.status === 404 ? 'không tìm thấy cài đặt với mã này' : (r.status === 403 ? 'sai mã PIN (bấm 🔒 Khoá máy này rồi nhập lại PIN)' : 'lỗi ' + r.status));
     const p = await r.json();
     Object.entries(p.settings || {}).forEach(([k, v]) => { if (k.startsWith('phl-') && !SYNC_SKIP.includes(k)) store(k, v); });
     const files = p.files || [], have = {};
@@ -2035,7 +2124,7 @@ async function importProfile(code) {
     return;
   }
   const p = clean(params.get('phat')), x = clean(params.get('xem'));
-  loadTurn().then(() => { if (p) camera(p); else if (x) viewer(x); else studio(); });
+  loadTurn().then(async () => { if (p) camera(p); else if (x) viewer(x); else if (await pinGate()) studio(); });
 })();
 </script>
 </body>
